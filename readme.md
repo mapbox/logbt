@@ -17,7 +17,7 @@ logbt node index.js
 ### Install
 
 ```sh
-curl -sL https://github.com/mapbox/logbt/archive/master.tar.gz | tar --gunzip --extract --strip-components=1 --exclude=readme.md --directory=/usr/local
+curl -sL https://github.com/mapbox/logbt/archive/v1.0.0.tar.gz | tar --gunzip --extract --strip-components=1 --exclude=readme.md --directory=/usr/local
 ```
 
 ### Our usage
