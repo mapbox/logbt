@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -eu
+
+if ! which gdb > /dev/null; then
+  echo "Could not find required command 'gdb'"
+  exit 1
+fi
+
+COREFILE=/tmp/logbt-coredump
+
+function backtrace {
+  local code=$?
+  if [ $code -eq 139 ] && [ -e $COREFILE ]; then
+    gdb $1 $COREFILE -ex "set pagination 0" -ex "thread apply all bt" --batch
+    rm -f $COREFILE
+  fi
+  exit $code
+}
+
+trap "backtrace $1" EXIT
+echo $COREFILE > /proc/sys/kernel/core_pattern
+ulimit -c unlimited
+$*
+
