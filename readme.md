@@ -22,4 +22,4 @@ curl -sL https://github.com/mapbox/logbt/archive/v1.0.0.tar.gz | tar --gunzip --
 
 ### Our usage
 
-We use this from within Docker containers to get a backtrace and dump it to `stdout`.
+We use this from within Docker containers to get a backtrace and dump it to `stdout`. Requires the `privileged` parameter to be set to `true` within [container definition](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#container_definition_security).
