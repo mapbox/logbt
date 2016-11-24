@@ -1,26 +1,67 @@
 #!/usr/bin/env bash
 
 set -eu
+set -o pipefail
 
-if ! which gdb > /dev/null; then
-  echo "Could not find required command 'gdb'"
-  exit 1
+if [[ $(uname -s) == 'Linux' ]]; then
+    if ! which gdb > /dev/null; then
+      echo "Could not find required command 'gdb'"
+      exit 1
+    fi
+
+    export CORE_DIRECTORY=/tmp/logbt-coredumps
+
+    echo "${CORE_DIRECTORY}/core.%p" > /proc/sys/kernel/core_pattern
+else
+    if ! which lldb > /dev/null; then
+      echo "Could not find required command 'lldb'"
+      exit 1
+    fi
+
+    # OS X default is /cores/core.%P which is viable with
+    # sysctl -n kern.corefile
+    # For now we'll avoid changing this to make it easy
+    # to test locally without sudo
+    export CORE_DIRECTORY=/cores
+
+    # In the future we could change with:
+    # sudo sysctl kern.corefile=${CORE_DIRECTORY}/core.%P
+
+    # Recommend running with the following setting to only show crashes
+    # in the notification center
+    # defaults write com.apple.CrashReporter UseUNC 1
 fi
 
-COREFILE=/tmp/logbt-coredump
+if [[ ! -d ${CORE_DIRECTORY} ]]; then
+    # TODO: enable this once tests are adapted to extra stdout
+    # echo "Creating directory for core files at '${CORE_DIRECTORY}'"
+    mkdir -p ${CORE_DIRECTORY}
+fi
+
+function process_core() {
+  if [[ $(uname -s) == 'Darwin' ]]; then
+    lldb --file $1 --core $2 --batch -o 'thread backtrace all' -o 'quit'
+  else
+    gdb $1 $2 -ex "set pagination 0" -ex "thread apply all bt" --batch
+  fi
+  # note: on OS X the -f avoids a hang on prompt 'remove write-protected regular file?'
+  rm -f ${2}
+}
 
 function backtrace {
   local code=$?
   echo "$1 exited with code:$code"
-  if [ -e $COREFILE ]; then
-    gdb $1 $COREFILE -ex "set pagination 0" -ex "thread apply all bt" --batch
-    rm -f $COREFILE
+  local COREFILE="${CORE_DIRECTORY}/core.${CHILD_PID}"
+  if [ -e ${COREFILE} ]; then
+    echo "Found core at ${COREFILE}"
+    process_core $1 ${COREFILE}
   fi
   exit $code
 }
 
 trap "backtrace $1" EXIT
-echo $COREFILE > /proc/sys/kernel/core_pattern
 ulimit -c unlimited
-$*
-
+$* & export CHILD_PID=$!
+# http://stackoverflow.com/questions/1570262/shell-get-exit-code-of-background-process
+wait ${CHILD_PID}
+echo $?
