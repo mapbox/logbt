@@ -34,6 +34,16 @@ mkdir -p ${WORKING_DIR}
 export CXXFLAGS="-g -O0 -DDEBUG"
 export CXX=${CXX:-g++}
 
+export SIGSEGV_CODE="139"
+export SIGABRT_CODE="134"
+if [[ $(uname -s) == 'Darwin' ]]; then
+    export SIGBUS_CODE="138"
+else
+    # on linux this is also 135? Why?
+    export SIGBUS_CODE="135"
+fi
+
+
 # abort
 echo "#include <cstdlib>" > ${WORKING_DIR}/abort.cpp
 echo "int main() { abort(); }" >> ${WORKING_DIR}/abort.cpp
@@ -43,8 +53,8 @@ assertEqual "$?" "0" "able to compile program abort.cpp"
 
 ./bin/logbt ${WORKING_DIR}/run-test >logs.txt 2>log_errors.txt || RESULT=$?
 
-assertEqual "${RESULT}" "134" "emitted expected signal"
-assertEqual "$(head -n 1 logs.txt)" "${WORKING_DIR}/run-test exited with code:134" "Emitted expected first line of stdout"
+assertEqual "${RESULT}" "${SIGABRT_CODE}" "emitted expected signal"
+assertEqual "$(head -n 1 logs.txt)" "${WORKING_DIR}/run-test exited with code:${SIGABRT_CODE}" "Emitted expected first line of stdout"
 assertContains "$(head -n 2 logs.txt | tail -n 1)" "Found core at" "Found core file for given PID"
 assertContains "$(cat logs.txt)" "abort.cpp:2" "Found expected line number in backtrace output"
 #cat logs.txt
@@ -59,8 +69,8 @@ assertEqual "$?" "0" "able to compile program segfault.cpp"
 
 ./bin/logbt ${WORKING_DIR}/run-test >logs.txt 2>log_errors.txt || RESULT=$?
 
-assertEqual "${RESULT}" "139" "emitted expected signal from segfault"
-assertEqual "$(head -n 1 logs.txt)" "${WORKING_DIR}/run-test exited with code:139" "Emitted expected first line of stdout"
+assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal from segfault"
+assertEqual "$(head -n 1 logs.txt)" "${WORKING_DIR}/run-test exited with code:${SIGSEGV_CODE}" "Emitted expected first line of stdout"
 assertContains "$(head -n 2 logs.txt | tail -n 1)" "Found core at" "Found core file for given PID"
 assertContains "$(cat logs.txt)" "segfault.cpp:2" "Found expected line number in backtrace output"
 #cat logs.txt
@@ -74,11 +84,13 @@ assertEqual "$?" "0" "able to compile program bus_error.cpp"
 
 ./bin/logbt ${WORKING_DIR}/run-test >logs.txt 2>log_errors.txt || RESULT=$?
 
-assertEqual "${RESULT}" "138" "emitted expected signal from bus error"
-assertEqual "$(head -n 1 logs.txt)" "${WORKING_DIR}/run-test exited with code:138" "Emitted expected first line of stdout"
+assertEqual "${RESULT}" "${SIGBUS_CODE}" "emitted expected signal from bus error"
+assertEqual "$(head -n 1 logs.txt)" "${WORKING_DIR}/run-test exited with code:${SIGBUS_CODE}" "Emitted expected first line of stdout"
 assertContains "$(head -n 2 logs.txt | tail -n 1)" "Found core at" "Found core file for given PID"
 assertContains "$(cat logs.txt)" "bus_error.cpp:2" "Found expected line number in backtrace output"
 #cat logs.txt
+
+# TODO: test SIGQUIT, SIGILL, SIGFPE, etc: http://man7.org/linux/man-pages/man7/signal.7.html
 
 if [[ ${CODE} == 0 ]]; then
     echo -e "\033[1m\033[32m* Success: ${passed} tests succeeded\033[0m";
