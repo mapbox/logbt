@@ -4,38 +4,38 @@ set -eu
 set -o pipefail
 
 if [[ $(uname -s) == 'Linux' ]]; then
-    if ! which gdb > /dev/null; then
-      echo "Could not find required command 'gdb'"
-      exit 1
-    fi
+  if ! which gdb > /dev/null; then
+    echo "Could not find required command 'gdb'"
+    exit 1
+  fi
 
-    export CORE_DIRECTORY=/tmp/logbt-coredumps
+  export CORE_DIRECTORY=/tmp/logbt-coredumps
 
-    echo "${CORE_DIRECTORY}/core.%p" > /proc/sys/kernel/core_pattern
+  echo "${CORE_DIRECTORY}/core.%p" > /proc/sys/kernel/core_pattern
 else
-    if ! which lldb > /dev/null; then
-      echo "Could not find required command 'lldb'"
-      exit 1
-    fi
+  if ! which lldb > /dev/null; then
+    echo "Could not find required command 'lldb'"
+    exit 1
+  fi
 
-    # OS X default is /cores/core.%P which is viable with
-    # sysctl -n kern.corefile
-    # For now we'll avoid changing this to make it easy
-    # to test locally without sudo
-    export CORE_DIRECTORY=/cores
+  # OS X default is /cores/core.%P which is viable with
+  # sysctl -n kern.corefile
+  # For now we'll avoid changing this to make it easy
+  # to test locally without sudo
+  export CORE_DIRECTORY=/cores
 
-    # In the future we could change with:
-    # sudo sysctl kern.corefile=${CORE_DIRECTORY}/core.%P
+  # In the future we could change with:
+  # sudo sysctl kern.corefile=${CORE_DIRECTORY}/core.%P
 
-    # Recommend running with the following setting to only show crashes
-    # in the notification center
-    # defaults write com.apple.CrashReporter UseUNC 1
+  # Recommend running with the following setting to only show crashes
+  # in the notification center
+  # defaults write com.apple.CrashReporter UseUNC 1
 fi
 
 if [[ ! -d ${CORE_DIRECTORY} ]]; then
-    # TODO: enable this once tests are adapted to extra stdout
-    # echo "Creating directory for core files at '${CORE_DIRECTORY}'"
-    mkdir -p ${CORE_DIRECTORY}
+  # TODO: enable this once tests are adapted to extra stdout
+  # echo "Creating directory for core files at '${CORE_DIRECTORY}'"
+  mkdir -p ${CORE_DIRECTORY}
 fi
 
 function process_core() {
@@ -59,9 +59,16 @@ function backtrace {
   exit $code
 }
 
+# Hook up function to run when logbt exits
 trap "backtrace $1" EXIT
+
+# Enable corefile generation
 ulimit -c unlimited
+
+# Run the child process in a background process
+# in order to get the PID
 $* & export CHILD_PID=$!
-# http://stackoverflow.com/questions/1570262/shell-get-exit-code-of-background-process
+
+# Keep logbt running as long as the child is running
+# to be able to hook into a potential crash
 wait ${CHILD_PID}
-echo $?
