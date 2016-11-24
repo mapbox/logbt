@@ -1,11 +1,24 @@
 language: generic
 
-sudo: required
-
-addons:
-  apt:
-    sources: [ 'ubuntu-toolchain-r-test']
-    packages: [ 'gdb','libstdc++-5-dev']
+matrix:
+  include:
+    - os: linux
+      sudo: required
+      dist: precise
+      addons:
+        apt:
+          sources: [ 'ubuntu-toolchain-r-test']
+          packages: [ 'gdb','libstdc++-5-dev']
+    - os: linux
+      sudo: required
+      dist: trusty
+      addons:
+        apt:
+          sources: [ 'ubuntu-toolchain-r-test']
+          packages: [ 'gdb','libstdc++-5-dev']
+    - os: osx
+      osx_image: xcode7
 
 script:
+  - bash --version
   - sudo ./test/unit.sh
