@@ -133,22 +133,6 @@ function main() {
 
     exit_early
 
-    # TODO: does not work, since we can't see pid
-    : '
-    # run node process that runs segfault.js as a child
-    run_test node children.js
-
-    assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
-    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
-    assertEqual "$(stdout 2)" "running custom-node" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 3)" "node exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
-    assertContains "$(stdout 4)" "Found core at" "Found core file for given PID"
-    assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
-
-    exit_early
-
-    '
-
     # abort
     echo "#include <cstdlib>" > ${WORKING_DIR}/abort.cpp
     echo "int main() { abort(); }" >> ${WORKING_DIR}/abort.cpp
