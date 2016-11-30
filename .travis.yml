@@ -1,0 +1,54 @@
+language: generic
+
+addons:
+  apt:
+    sources: [ 'ubuntu-toolchain-r-test']
+    packages: [ 'gdb','libstdc++-5-dev']
+
+matrix:
+  include:
+    - os: linux
+      sudo: required
+      dist: precise
+    - os: linux
+      sudo: required
+      dist: trusty
+    - os: osx
+
+install:
+  # install node in a way that ensures node will be on PATH for sudo and sudoless usage
+  # install-node is a good solution given https://github.com/travis-ci/travis-ci/issues/1350
+  # which causes `source nvm.sh && sudo node ...` to fail
+  - curl https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o run
+  - chmod +x ./run
+  - sudo NV=4.4.2 NP=linux-x64 OD=/usr/local ./run
+  - bash --version
+
+script:
+  # logbt should work as both root and as a non root user (as long as the corefile location is set beforehand as sudo)
+  - |
+    if [[ $(uname -s) == 'Darwin' ]]; then
+        # first test sudoless
+        sudo sysctl kern.corefile=/tmp/logbt-coredumps/core.%P
+        echo "running test sudoless"
+        ./test/unit.sh
+        # now set the kernfile to something wrong to ensure that
+        # the next run as sudo will fix and work
+        echo ""
+        echo "running tests again as sudo"
+        sudo sysctl kern.corefile=dummy
+        # now run tests as sudo
+        sudo ./test/unit.sh
+    else
+        # first test sudoless
+        sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p" > /proc/sys/kernel/core_pattern'
+        echo "running test sudoless"
+        ./test/unit.sh
+        # now set the kernfile to something wrong to ensure that
+        # the next run as sudo will fix and work
+        echo ""
+        echo "running tests again as sudo"
+        sudo bash -c 'echo "dummy" > /proc/sys/kernel/core_pattern'
+        # now run tests as sudo
+        sudo ./test/unit.sh
+    fi
