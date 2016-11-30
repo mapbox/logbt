@@ -8,6 +8,14 @@ install_default: &setup
   - nvm use ${NODE_VERSION}
   - bash --version
 
+linux_default: &linux_setup
+  # logbt by default sets up core pattern since it
+  # is intended to be run as root in production,
+  # but here we set up as root beforehand to be able to
+  # run test as non-sudo
+  - sudo bash -c "echo "/tmp/logbt-coredumps/core.%p" > /proc/sys/kernel/core_pattern"
+  - export CORE_PATTERN=false
+
 matrix:
   include:
     - os: linux
@@ -17,10 +25,8 @@ matrix:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
           packages: [ 'gdb','libstdc++-5-dev']
+      before_install: *linux_setup
       install: *setup
-      script:
-        # sudo is only required currently on linux
-        - sudo ./test/unit.sh
     - os: linux
       sudo: required
       dist: trusty
@@ -28,12 +34,11 @@ matrix:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
           packages: [ 'gdb','libstdc++-5-dev']
+      before_install: *linux_setup
       install: *setup
-      script:
-        # sudo is only required currently on linux
-        - sudo ./test/unit.sh
     - os: osx
       osx_image: xcode7
       install: *setup
-      script:
-        - ./test/unit.sh
+
+script:
+  - sudo ./test/unit.sh

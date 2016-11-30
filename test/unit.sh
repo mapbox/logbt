@@ -6,6 +6,7 @@ set -o pipefail
 export CODE=0
 export failures=0
 export passed=0
+export RESULT=0
 
 function assertEqual() {
     if [[ "$1" == "$2" ]]; then
@@ -51,8 +52,6 @@ assertEqual "$(head -n 1 logs.txt)" "running custom-node" "Emitted expected firs
 assertEqual "$(head -n 2 logs.txt | tail -n 1)" "node exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
 assertContains "$(head -n 3 logs.txt | tail -n 1)" "Found core at" "Found core file for given PID"
 assertContains "$(cat logs.txt)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
-
-exit 0
 
 # abort
 echo "#include <cstdlib>" > ${WORKING_DIR}/abort.cpp
