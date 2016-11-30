@@ -3,33 +3,53 @@
 set -eu
 set -o pipefail
 
+export CORE_DIRECTORY=/tmp/logbt-coredumps
+
+function error() {
+  >&2 echo "$@"
+  exit 1
+}
+
 if [[ $(uname -s) == 'Linux' ]]; then
   if ! which gdb > /dev/null; then
-    echo "Could not find required command 'gdb'"
-    exit 1
+    error "Could not find required command 'gdb'"
   fi
 
-  export CORE_DIRECTORY=/tmp/logbt-coredumps
-  export CORE_PATTERN=${CORE_PATTERN:-"core.%p"}
-  # requires sudo
-  if [[ ${CORE_PATTERN:-false} != false ]]; then
-    echo "${CORE_DIRECTORY}/${CORE_PATTERN}" > /proc/sys/kernel/core_pattern
+  # if we have sudo then set core pattern
+  if [[ $(id -u) == 0 ]]; then
+    echo "Setting $(cat /proc/sys/kernel/core_pattern) -> ${CORE_DIRECTORY}/core.%p"
+    echo "${CORE_DIRECTORY}/core.%p" > /proc/sys/kernel/core_pattern
+  else
+    # if we cannot modify the pattern we assert it has
+    # already been set as we expect and need
+    if [[ $(cat /proc/sys/kernel/core_pattern) != '/tmp/logbt-coredumps/core.%p' ]]; then
+      error "unexpected core_pattern: $(cat /proc/sys/kernel/core_pattern)"
+      exit 1
+    fi
   fi
 else
   if ! which lldb > /dev/null; then
-    echo "Could not find required command 'lldb'"
+    error "Could not find required command 'lldb'"
     exit 1
   fi
 
-  # For now we'll avoid changing this to make it easy
-  # to test locally without sudo
-  export CORE_DIRECTORY=/cores
-  # OS X default is /cores/core.%P which is viable with
-  # sysctl -n kern.corefile
-  export CORE_PATTERN=${CORE_PATTERN:-"core.%P"}
-
-  # In the future we could change with:
-  # sudo sysctl kern.corefile=${CORE_DIRECTORY}/core.%P
+  # if we have sudo then set core pattern
+  if [[ $(id -u) == 0 ]]; then
+    sudo sysctl kern.corefile=${CORE_DIRECTORY}/core.%P
+  else
+    if [[ $(sysctl -n kern.corefile) == '/cores/core.%P' ]]; then
+      # OS X default is /cores/core.%P which works for logbt out of the box
+      export CORE_DIRECTORY=/cores
+    elif [[ $(sysctl -n kern.corefile) == '${CORE_DIRECTORY}/core.%P' ]]; then
+      # all good, previously set
+      :
+    else
+      # restore default with:
+      # sudo sysctl kern.corefile=/cores/core.%P
+      error "unexpected core_pattern: $(sysctl -n kern.corefile)"
+      exit 1
+    fi
+  fi
 
   # Recommend running with the following setting to only show crashes
   # in the notification center

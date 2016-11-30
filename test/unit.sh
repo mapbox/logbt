@@ -30,10 +30,27 @@ function assertContains() {
     fi
 }
 
+function exit_tests() {
+    if [[ ${CODE} == 0 ]]; then
+        echo -e "\033[1m\033[32m* Success: ${passed} tests succeeded\033[0m";
+    else
+        echo -e "\033[1m\033[31m* Error: ${failures} test(s) failed\033[0m";
+    fi
+    exit ${CODE}
+}
+
+function exit_early() {
+    if [[ ${CODE} != 0 ]]; then
+        exit_tests
+    fi
+}
+
 export WORKING_DIR="/tmp/logbt"
 mkdir -p ${WORKING_DIR}
 export CXXFLAGS="-g -O0 -DDEBUG"
 export CXX=${CXX:-g++}
+export STDOUT_LOGS="stdout.txt"
+export STDERR_LOGS="stderr.txt"
 
 export SIGSEGV_CODE="139"
 export SIGABRT_CODE="134"
@@ -44,14 +61,66 @@ else
     export SIGBUS_CODE="135"
 fi
 
+function stdout() {
+    #head -n $1 ${STDOUT_LOGS} | tail -n 1
+    sed "${1}q;d" ${STDOUT_LOGS}
+}
+
+function stderr() {
+    sed "${1}q;d" ${STDERR_LOGS}
+}
+
+function all_lines() {
+    cat ${STDOUT_LOGS}
+}
+
+function run_test() {
+    ./bin/logbt $@ >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    echo -e "\033[1m\033[32mok\033[0m - ran ./bin/logbt $@ >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    export passed=$((passed+1))
+}
+
+# test logbt with non-crashing program
+run_test node -e "console.error('stderr');console.log('stdout')"
+assertEqual "${RESULT}" "0" "emitted expected signal"
+# check stdout
+assertEqual "$(stdout 1)" "stdout" "Emitted expected first line of stdout"
+assertEqual "$(stdout 2)" "node exited with code:0" "Emitted expected second line of stdout"
+assertEqual "$(stdout 3)" "" "No line 3 present"
+# check stderr
+assertEqual "$(stderr 1)" "stderr" "Emitted expected first line of stderr"
+assertEqual "$(stderr 2)" "" "No line 3 present"
+
+# bail early if this trivial case is not working
+exit_early
+
 # run node process that segfaults after 1000ms
-./bin/logbt node segfault.js >logs.txt 2>log_errors.txt || RESULT=$?
+: '
+run_test node segfault.js
 
 assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
-assertEqual "$(head -n 1 logs.txt)" "running custom-node" "Emitted expected first line of stdout"
-assertEqual "$(head -n 2 logs.txt | tail -n 1)" "node exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
-assertContains "$(head -n 3 logs.txt | tail -n 1)" "Found core at" "Found core file for given PID"
-assertContains "$(cat logs.txt)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
+assertEqual "$(stdout 1)" "running custom-node" "Emitted expected first line of stdout"
+assertEqual "$(stdout 2)" "node exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
+assertContains "$(stdout 3)" "Found core at" "Found core file for given PID"
+assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
+
+exit_early
+'
+
+# TODO: does not work, since we can't see pid
+: '
+# run node process that runs segfault.js as a child
+run_test node children.js
+
+assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
+assertEqual "$(stdout 1)" "running custom-node" "Emitted expected first line of stdout"
+assertEqual "$(stdout 2)" "node exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
+assertContains "$(stdout 3)" "Found core at" "Found core file for given PID"
+assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
+
+exit_early
+
+'
 
 # abort
 echo "#include <cstdlib>" > ${WORKING_DIR}/abort.cpp
@@ -60,14 +129,12 @@ echo "int main() { abort(); }" >> ${WORKING_DIR}/abort.cpp
 ${CXX} ${CXXFLAGS} -o ${WORKING_DIR}/run-test ${WORKING_DIR}/abort.cpp
 assertEqual "$?" "0" "able to compile program abort.cpp"
 
-./bin/logbt ${WORKING_DIR}/run-test >logs.txt 2>log_errors.txt || RESULT=$?
+run_test ${WORKING_DIR}/run-test
 
 assertEqual "${RESULT}" "${SIGABRT_CODE}" "emitted expected signal"
-assertEqual "$(head -n 1 logs.txt)" "${WORKING_DIR}/run-test exited with code:${SIGABRT_CODE}" "Emitted expected first line of stdout"
-assertContains "$(head -n 2 logs.txt | tail -n 1)" "Found core at" "Found core file for given PID"
-assertContains "$(cat logs.txt)" "abort.cpp:2" "Found expected line number in backtrace output"
-#cat logs.txt
-
+assertEqual "$(stdout 1)" "${WORKING_DIR}/run-test exited with code:${SIGABRT_CODE}" "Emitted expected first line of stdout"
+assertContains "$(stdout 2)" "Found core at" "Found core file for given PID"
+assertContains "$(all_lines)" "abort.cpp:2" "Found expected line number in backtrace output"
 
 # segfault
 echo "#include <signal.h>" > ${WORKING_DIR}/segfault.cpp
@@ -76,13 +143,12 @@ echo "int main() { raise(SIGSEGV); }" >> ${WORKING_DIR}/segfault.cpp
 ${CXX} ${CXXFLAGS} -o ${WORKING_DIR}/run-test ${WORKING_DIR}/segfault.cpp
 assertEqual "$?" "0" "able to compile program segfault.cpp"
 
-./bin/logbt ${WORKING_DIR}/run-test >logs.txt 2>log_errors.txt || RESULT=$?
+run_test ${WORKING_DIR}/run-test
 
 assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal from segfault"
-assertEqual "$(head -n 1 logs.txt)" "${WORKING_DIR}/run-test exited with code:${SIGSEGV_CODE}" "Emitted expected first line of stdout"
-assertContains "$(head -n 2 logs.txt | tail -n 1)" "Found core at" "Found core file for given PID"
-assertContains "$(cat logs.txt)" "segfault.cpp:2" "Found expected line number in backtrace output"
-#cat logs.txt
+assertEqual "$(stdout 1)" "${WORKING_DIR}/run-test exited with code:${SIGSEGV_CODE}" "Emitted expected first line of stdout"
+assertContains "$(stdout 2)" "Found core at" "Found core file for given PID"
+assertContains "$(all_lines)" "segfault.cpp:2" "Found expected line number in backtrace output"
 
 # bus error
 echo "#include <signal.h>" > ${WORKING_DIR}/bus_error.cpp
@@ -91,19 +157,13 @@ echo "int main() { raise(SIGBUS); }" >> ${WORKING_DIR}/bus_error.cpp
 ${CXX} ${CXXFLAGS} -o ${WORKING_DIR}/run-test ${WORKING_DIR}/bus_error.cpp
 assertEqual "$?" "0" "able to compile program bus_error.cpp"
 
-./bin/logbt ${WORKING_DIR}/run-test >logs.txt 2>log_errors.txt || RESULT=$?
+run_test ${WORKING_DIR}/run-test
 
 assertEqual "${RESULT}" "${SIGBUS_CODE}" "emitted expected signal from bus error"
-assertEqual "$(head -n 1 logs.txt)" "${WORKING_DIR}/run-test exited with code:${SIGBUS_CODE}" "Emitted expected first line of stdout"
-assertContains "$(head -n 2 logs.txt | tail -n 1)" "Found core at" "Found core file for given PID"
-assertContains "$(cat logs.txt)" "bus_error.cpp:2" "Found expected line number in backtrace output"
-#cat logs.txt
+assertEqual "$(stdout 1)" "${WORKING_DIR}/run-test exited with code:${SIGBUS_CODE}" "Emitted expected first line of stdout"
+assertContains "$(stdout 2)" "Found core at" "Found core file for given PID"
+assertContains "$(all_lines)" "bus_error.cpp:2" "Found expected line number in backtrace output"
 
 # TODO: test SIGQUIT, SIGILL, SIGFPE, etc: http://man7.org/linux/man-pages/man7/signal.7.html
 
-if [[ ${CODE} == 0 ]]; then
-    echo -e "\033[1m\033[32m* Success: ${passed} tests succeeded\033[0m";
-else
-    echo -e "\033[1m\033[31m* Error: ${failures} test(s) failed\033[0m";
-fi
-exit ${CODE}
+exit_tests
