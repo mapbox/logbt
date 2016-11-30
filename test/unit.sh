@@ -43,6 +43,16 @@ else
     export SIGBUS_CODE="135"
 fi
 
+# run node process that segfaults after 1000ms
+./bin/logbt node segfault.js >logs.txt 2>log_errors.txt || RESULT=$?
+
+assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
+assertEqual "$(head -n 1 logs.txt)" "running custom-node" "Emitted expected first line of stdout"
+assertEqual "$(head -n 2 logs.txt | tail -n 1)" "node exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
+assertContains "$(head -n 3 logs.txt | tail -n 1)" "Found core at" "Found core file for given PID"
+assertContains "$(cat logs.txt)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
+
+exit 0
 
 # abort
 echo "#include <cstdlib>" > ${WORKING_DIR}/abort.cpp
