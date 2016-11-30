@@ -64,6 +64,18 @@ if [[ ! -d ${CORE_DIRECTORY} ]]; then
   mkdir -p ${CORE_DIRECTORY}
 fi
 
+# ensure we can write to the directory, otherwise
+# core files might not be able to be written
+WRITE_RETURN=0
+touch ${CORE_DIRECTORY}/test.txt || WRITE_RETURN=$?
+if [[ ${WRITE_RETURN} != 0 ]]; then
+  error "Permissions problem: unable to write to ${CORE_DIRECTORY} (exited with ${WRITE_RETURN})"
+  exit 1
+else
+  # cleanup from test
+  rm ${CORE_DIRECTORY}/test.txt
+fi
+
 function process_core() {
   if [[ $(uname -s) == 'Darwin' ]]; then
     lldb --file $1 --core $2 --batch -o 'thread backtrace all' -o 'quit'
