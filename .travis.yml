@@ -25,10 +25,13 @@ matrix:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
           packages: [ 'gdb','libstdc++-5-dev']
-      # everything as root
-      before_install:
-        - sudo -s
-      install: *setup
+      # everything in a way that works with sudo
+      install:
+        - curl https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o run
+        - chmod +x ./run
+        - sudo NV=4.4.2 NP=linux-x64 OD=/usr/local ./run
+      script:
+        - sudo ./test/unit.sh
 
     - os: linux
       sudo: required
@@ -39,6 +42,8 @@ matrix:
           packages: [ 'gdb','libstdc++-5-dev']
       before_install: *linux_setup
       install: *setup
+      script:
+        - ./test/unit.sh
 
     - os: linux
       sudo: required
@@ -49,11 +54,12 @@ matrix:
           packages: [ 'gdb','libstdc++-5-dev']
       before_install: *linux_setup
       install: *setup
+      script:
+        - ./test/unit.sh
 
     - os: osx
       osx_image: xcode7
       install: *setup
-
-script:
-  - ./test/unit.sh
+      script:
+        - ./test/unit.sh
 
