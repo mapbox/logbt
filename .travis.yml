@@ -2,7 +2,7 @@ language: generic
 
 install_default: &setup
   - git clone --depth 1 https://github.com/creationix/nvm.git ./nvm
-  - source ./nvm
+  - source ./nvm/nvm.sh
   - export NODE_VERSION=4
   - nvm install ${NODE_VERSION}
   - nvm use ${NODE_VERSION}
