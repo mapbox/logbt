@@ -122,7 +122,7 @@ function main() {
     exit_early
 
     # run node process that segfaults after 1000ms
-    run_test node segfault.js
+    run_test node test/segfault.js
 
     assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
