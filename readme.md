@@ -6,8 +6,21 @@ Simple wrapper for running a backtrace when a program segfaults. Requires `gdb` 
 
 ### Install
 
+To /usr/local/bin:
+
 ```sh
-curl -sL https://github.com/mapbox/logbt/archive/v1.2.0.tar.gz | tar --gunzip --extract --strip-components=1 --exclude=readme.md --directory=/usr/local
+curl -sSfL https://github.com/mapbox/logbt/archive/v1.2.0.tar.gz | tar --gunzip --extract --strip-components=1 --include=*bin/* --directory=/usr/local
+which logbt
+/usr/local/bin/logbt
+```
+
+Locally (perhaps if your user cannot write to /usr/local):
+
+```sh
+curl -sSfL https://github.com/mapbox/logbt/archive/v1.2.0.tar.gz | tar --gunzip --extract --strip-components=2 --include=*bin/* --directory=.
+./logbt sleep 1
+Using existing corefile location: /cores/core.%P
+sleep exited with code:0
 ```
 
 ### Supports
