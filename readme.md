@@ -12,12 +12,12 @@ curl -sL https://github.com/mapbox/logbt/archive/v1.2.0.tar.gz | tar --gunzip --
 
 ### Supports
 
- - Linux
- - OS X
- - Running as root
- - Running as unprivileged user*
+ - Linux and OS X
+ - Running as root or as unprivileged user
 
-* When running as an unprivileged user you must first ensure the default corefile location is valid.
+When running as root the corefile location will be modified by `logbt` when run.
+
+When running as an unprivileged user logbt will not modify the corefile location and instead will only assert that it looks acceptable.
 
 On OSX this means:
 
