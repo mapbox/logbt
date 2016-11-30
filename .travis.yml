@@ -41,4 +41,4 @@ matrix:
       install: *setup
 
 script:
-  - sudo ./test/unit.sh
+  - ./test/unit.sh
