@@ -13,7 +13,7 @@ linux_default: &linux_setup
   # is intended to be run as root in production,
   # but here we set up as root beforehand to be able to
   # run test as non-sudo
-  - sudo bash -c "echo "/tmp/logbt-coredumps/core.%p" > /proc/sys/kernel/core_pattern"
+  - sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p" > /proc/sys/kernel/core_pattern'
   - export CORE_PATTERN=false
 
 matrix:
