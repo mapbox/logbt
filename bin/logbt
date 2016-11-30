@@ -26,6 +26,7 @@ if [[ $(uname -s) == 'Linux' ]]; then
       error "unexpected core_pattern: $(cat /proc/sys/kernel/core_pattern)"
       exit 1
     fi
+    echo "Using existing corefile location: $(cat /proc/sys/kernel/core_pattern)"
   fi
 else
   if ! which lldb > /dev/null; then
@@ -49,6 +50,7 @@ else
       error "unexpected core_pattern: $(sysctl -n kern.corefile)"
       exit 1
     fi
+    echo "Using existing corefile location: $(sysctl -n kern.corefile)"
   fi
 
   # Recommend running with the following setting to only show crashes
