@@ -25,10 +25,10 @@ On OSX this means:
 
 On Linux this means:
 
- - The `/proc/sys/kernel/core_pattern` file has been modified like:
+ - The `/proc/sys/kernel/core_pattern` file has been modified by root like:
 
  ```
- echo "/tmp/logbt-coredumps/core.%p" > /proc/sys/kernel/core_pattern
+ sudo bash -c "echo '/tmp/logbt-coredumps/core.%p' > /proc/sys/kernel/core_pattern"
  ```
 
 ### Our usage
