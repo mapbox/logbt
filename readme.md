@@ -9,7 +9,7 @@ Simple wrapper for running a backtrace when a program segfaults. Requires `gdb` 
 To /usr/local/bin:
 
 ```sh
-curl -sSfL https://github.com/mapbox/logbt/archive/v1.2.0.tar.gz | tar --gunzip --extract --strip-components=1 --exclude="*md" --exclude="test*" --directory=/usr/local
+curl -sSfL https://github.com/mapbox/logbt/archive/v1.3.0.tar.gz | tar --gunzip --extract --strip-components=1 --exclude="*md" --exclude="test*" --directory=/usr/local
 which logbt
 /usr/local/bin/logbt
 ```
@@ -17,7 +17,7 @@ which logbt
 Locally (perhaps if your user cannot write to /usr/local):
 
 ```sh
-curl -sSfL https://github.com/mapbox/logbt/archive/v1.2.0.tar.gz | tar --gunzip --extract --strip-components=2 --exclude="*md" --exclude="test*" --directory=.
+curl -sSfL https://github.com/mapbox/logbt/archive/v1.3.0.tar.gz | tar --gunzip --extract --strip-components=2 --exclude="*md" --exclude="test*" --directory=.
 ./logbt sleep 1
 Using existing corefile location: /cores/core.%P
 sleep exited with code:0
