@@ -5,15 +5,44 @@ addons:
     sources: [ 'ubuntu-toolchain-r-test']
     packages: [ 'gdb','libstdc++-5-dev']
 
+script_linux: &linux
+ # first test sudoless
+ - sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p" > /proc/sys/kernel/core_pattern'
+ - echo "running test sudoless"
+ - ./test/unit.sh
+ # now set the kernfile to something wrong to ensure that
+ # the next run as sudo will fix and work
+ - echo ""
+ - echo "running tests again as sudo"
+ - sudo bash -c 'echo "dummy" > /proc/sys/kernel/core_pattern'
+ # now run tests as sudo
+ - sudo ./test/unit.sh
+
+script_osx: &osx
+  # first test sudoless
+ - sudo sysctl kern.corefile=/tmp/logbt-coredumps/core.%P
+ - echo "running test sudoless"
+ - ./test/unit.sh
+ # now set the kernfile to something wrong to ensure that
+ # the next run as sudo will fix and work
+ - echo ""
+ - echo "running tests again as sudo"
+ - sudo sysctl kern.corefile=dummy
+ # now run tests as sudo
+ - sudo ./test/unit.sh
+
 matrix:
   include:
     - os: linux
       sudo: required
       dist: precise
+      script: *linux
     - os: linux
       sudo: required
       dist: trusty
+      script: *linux
     - os: osx
+      script: *osx
 
 install:
   # install node in a way that ensures node will be on PATH for sudo and sudoless usage
@@ -25,32 +54,3 @@ install:
   - if [[ $(uname -s) == 'Darwin' ]]; then export PLATFORM="darwin" && brew rm node || true; fi;
   - sudo NV=4.4.2 NP=${PLATFORM}-x64 OD=/usr/local ./run
   - bash --version
-
-script:
-  # logbt should work as both root and as a non root user (as long as the corefile location is set beforehand as sudo)
-  - |
-    if [[ $(uname -s) == 'Darwin' ]]; then
-        # first test sudoless
-        sudo sysctl kern.corefile=/tmp/logbt-coredumps/core.%P
-        echo "running test sudoless"
-        ./test/unit.sh
-        # now set the kernfile to something wrong to ensure that
-        # the next run as sudo will fix and work
-        echo ""
-        echo "running tests again as sudo"
-        sudo sysctl kern.corefile=dummy
-        # now run tests as sudo
-        sudo ./test/unit.sh
-    else
-        # first test sudoless
-        sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p" > /proc/sys/kernel/core_pattern'
-        echo "running test sudoless"
-        ./test/unit.sh
-        # now set the kernfile to something wrong to ensure that
-        # the next run as sudo will fix and work
-        echo ""
-        echo "running tests again as sudo"
-        sudo bash -c 'echo "dummy" > /proc/sys/kernel/core_pattern'
-        # now run tests as sudo
-        sudo ./test/unit.sh
-    fi
