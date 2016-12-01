@@ -88,11 +88,25 @@ function process_core() {
 
 function backtrace {
   local code=$?
-  echo "$1 exited with code:$code"
+  echo "$1 exited with code:${code}"
   local COREFILE="${CORE_DIRECTORY}/core.${CHILD_PID}"
   if [ -e ${COREFILE} ]; then
     echo "Found core at ${COREFILE}"
     process_core $1 ${COREFILE}
+  elif [[ ${code} != 0 ]]; then
+    echo "No core found at ${COREFILE}"
+    local SEARCH_PATTERN="core.*"
+    local hit=false
+    for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN}; do
+      echo "Found core at ${corefile}"
+      hit=true
+    done
+    if [[ ${hit} == true ]]; then
+      echo "Processing cores..."
+    fi
+    for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN}; do
+      process_core $1 ${corefile}
+    done
   fi
   exit $code
 }

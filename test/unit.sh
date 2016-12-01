@@ -76,7 +76,6 @@ function exit_early() {
     fi
 }
 
-
 function stdout() {
     #head -n $1 ${STDOUT_LOGS} | tail -n 1
     sed "${1}q;d" ${STDOUT_LOGS}
@@ -106,6 +105,7 @@ function main() {
     fi
 
     mkdir -p ${WORKING_DIR}
+
     # test logbt with non-crashing program
     run_test node -e "console.error('stderr');console.log('stdout')"
     assertEqual "${RESULT}" "0" "emitted expected signal"
@@ -132,6 +132,18 @@ function main() {
     assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
 
     exit_early
+
+    # run node process that runs segfault.js as a child
+    run_test node test/children.js
+
+    assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
+    assertEqual "$(stdout 2)" "running custom-node" "Emitted expected first line of stdout"
+    assertEqual "$(stdout 3)" "node exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
+    assertContains "$(stdout 4)" "No core found at" "No core for direct child"
+    assertContains "$(stdout 5)" "Found core at" "Found core file by directory search"
+    assertContains "$(stdout 6)" "Processing cores..." "Processing cores..."
+    assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
 
     # abort
     echo "#include <cstdlib>" > ${WORKING_DIR}/abort.cpp
