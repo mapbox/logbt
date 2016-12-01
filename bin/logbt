@@ -2,6 +2,7 @@
 
 set -eu
 set -o pipefail
+shopt -s nullglob
 
 export CORE_DIRECTORY=/tmp/logbt-coredumps
 
@@ -88,14 +89,46 @@ function process_core() {
 
 function backtrace {
   local code=$?
-  echo "$1 exited with code:$code"
+  echo "$1 exited with code:${code}"
   local COREFILE="${CORE_DIRECTORY}/core.${CHILD_PID}"
   if [ -e ${COREFILE} ]; then
     echo "Found core at ${COREFILE}"
     process_core $1 ${COREFILE}
+  else
+    if [[ ${code} != 0 ]]; then
+        echo "No core found at ${COREFILE}"
+    fi
+  fi
+  local SEARCH_PATTERN="core.*"
+  local hit=false
+  for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN}; do
+    echo "Found non-tracked core at ${corefile}"
+    hit=true
+  done
+  if [[ ${code} != 0 ]]; then
+    if [[ ${hit} == true ]]; then
+      echo "Processing cores..."
+    fi
+    for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN}; do
+      process_core $1 ${corefile}
+    done
+  else
+    if [[ ${hit} == true ]]; then
+      echo "Skipping processing cores..."
+    fi
   fi
   exit $code
 }
+
+function warn_on_existing_cores() {
+  local SEARCH_PATTERN="core.*"
+  # at startup warn about existing corefiles, since these are unexpected
+  for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN}; do
+    echo "WARNING: Found existing corefile at ${corefile}"
+  done
+}
+
+warn_on_existing_cores
 
 # Hook up function to run when logbt exits
 trap "backtrace $1" EXIT

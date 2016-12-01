@@ -84,7 +84,6 @@ function exit_early() {
     fi
 }
 
-
 function stdout() {
     #head -n $1 ${STDOUT_LOGS} | tail -n 1
     sed "${1}q;d" ${STDOUT_LOGS}
@@ -99,6 +98,7 @@ function all_lines() {
 }
 
 function run_test() {
+    export RESULT=0
     ./bin/logbt $@ >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
     echo -e "\033[1m\033[32mok\033[0m - ran ./bin/logbt $@ >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     export passed=$((passed+1))
@@ -114,6 +114,7 @@ function main() {
     fi
 
     mkdir -p ${WORKING_DIR}
+
     # test logbt with non-crashing program
     run_test node -e "console.error('stderr');console.log('stdout')"
     assertEqual "${RESULT}" "0" "emitted expected signal"
@@ -141,7 +142,43 @@ function main() {
 
     exit_early
 
+    # run node process that runs segfault.js as a child
+    run_test node test/children.js
+
+    assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
+    assertEqual "$(stdout 2)" "running custom-node" "Emitted expected first line of stdout"
+    assertEqual "$(stdout 3)" "node exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
+    assertContains "$(stdout 4)" "No core found at" "No core for direct child"
+    assertContains "$(stdout 5)" "Found non-tracked core at" "Found core file by directory search"
+    assertContains "$(stdout 6)" "Processing cores..." "Processing cores..."
+    assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
+
+    exit_early
+
+    # test logbt with non-crashing program
+    # and unexpected cores on the system from something
+    # else that went wrong
+    # First re-run the segfaulting test
+    (ulimit -c unlimited && node test/children.js || true)
+    # Now a core should be left behind
+    run_test node -e "console.error('stderr');console.log('stdout')"
+    assertEqual "${RESULT}" "0" "emitted expected signal"
+    # check stdout
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
+    assertContains "$(stdout 2)" "WARNING: Found existing corefile at" "Emitted expected first line of stdout"
+    assertEqual "$(stdout 3)" "stdout" "Emitted expected first line of stdout"
+    assertEqual "$(stdout 4)" "node exited with code:0" "Emitted expected second line of stdout"
+    assertContains "$(stdout 5)" "Found non-tracked core at" "Expected to find core"
+    assertEqual "$(stdout 6)" "Skipping processing cores..." "Expected to skip core"
+    # check stderr
+    assertEqual "$(stderr 1)" "stderr" "Emitted expected first line of stderr"
+    assertEqual "$(stderr 2)" "" "No line 3 present"
+
+    exit_early
+
     # abort
+    # note: this will process and clean up the non-tracked cores from the previous test
     echo "#include <cstdlib>" > ${WORKING_DIR}/abort.cpp
     echo "int main() { abort(); }" >> ${WORKING_DIR}/abort.cpp
 
@@ -152,8 +189,9 @@ function main() {
 
     assertEqual "${RESULT}" "${SIGABRT_CODE}" "emitted expected signal"
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
-    assertEqual "$(stdout 2)" "${WORKING_DIR}/run-test exited with code:${SIGABRT_CODE}" "Emitted expected first line of stdout"
-    assertContains "$(stdout 3)" "Found core at" "Found core file for given PID"
+    assertContains "$(stdout 2)" "WARNING: Found existing corefile at" "Found previous non-tracked corefile"
+    assertEqual "$(stdout 3)" "${WORKING_DIR}/run-test exited with code:${SIGABRT_CODE}" "Emitted expected first line of stdout"
+    assertContains "$(stdout 4)" "Found core at" "Found core file for given PID"
     assertContains "$(all_lines)" "abort.cpp:2" "Found expected line number in backtrace output"
 
     exit_early
