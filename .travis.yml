@@ -22,7 +22,7 @@ install:
   - curl https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o run
   - chmod +x ./run
   - export PLATFORM="linux"
-  - if [[ $(uname -s) == 'Darwin' ]]; then export PLATFORM="darwin"; fi;
+  - if [[ $(uname -s) == 'Darwin' ]]; then export PLATFORM="darwin" && brew rm node || true; fi;
   - sudo NV=4.4.2 NP=${PLATFORM}-x64 OD=/usr/local ./run
   - bash --version
 
