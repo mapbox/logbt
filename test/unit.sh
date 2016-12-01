@@ -72,6 +72,14 @@ function exit_tests() {
 
 function exit_early() {
     if [[ ${CODE} != 0 ]]; then
+        echo "bailing tests early"
+        echo
+        echo "dumping log of stdout"
+        cat ${STDOUT_LOGS}
+        echo
+        echo "dumping log of stderr"
+        cat ${STDERR_LOGS}
+        echo
         exit_tests
     fi
 }
@@ -160,6 +168,8 @@ function main() {
     assertContains "$(stdout 3)" "Found core at" "Found core file for given PID"
     assertContains "$(all_lines)" "abort.cpp:2" "Found expected line number in backtrace output"
 
+    exit_early
+
     # segfault
     echo "#include <signal.h>" > ${WORKING_DIR}/segfault.cpp
     echo "int main() { raise(SIGSEGV); }" >> ${WORKING_DIR}/segfault.cpp
@@ -174,6 +184,8 @@ function main() {
     assertEqual "$(stdout 2)" "${WORKING_DIR}/run-test exited with code:${SIGSEGV_CODE}" "Emitted expected first line of stdout"
     assertContains "$(stdout 3)" "Found core at" "Found core file for given PID"
     assertContains "$(all_lines)" "segfault.cpp:2" "Found expected line number in backtrace output"
+
+    exit_early
 
     # bus error
     echo "#include <signal.h>" > ${WORKING_DIR}/bus_error.cpp
