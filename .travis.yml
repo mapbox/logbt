@@ -54,3 +54,5 @@ install:
   - if [[ $(uname -s) == 'Darwin' ]]; then export PLATFORM="darwin" && brew rm node || true; fi;
   - sudo NV=4.4.2 NP=${PLATFORM}-x64 OD=/usr/local ./run
   - bash --version
+  - which node
+  - node --version
