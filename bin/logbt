@@ -94,20 +94,28 @@ function backtrace {
   if [ -e ${COREFILE} ]; then
     echo "Found core at ${COREFILE}"
     process_core $1 ${COREFILE}
-  elif [[ ${code} != 0 ]]; then
-    echo "No core found at ${COREFILE}"
-    local SEARCH_PATTERN="core.*"
-    local hit=false
-    for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN}; do
-      echo "Found core at ${corefile}"
-      hit=true
-    done
+  else
+    if [[ ${code} != 0 ]]; then
+        echo "No core found at ${COREFILE}"
+    fi
+  fi
+  local SEARCH_PATTERN="core.*"
+  local hit=false
+  for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN}; do
+    echo "Found non-tracked core at ${corefile}"
+    hit=true
+  done
+  if [[ ${code} != 0 ]]; then
     if [[ ${hit} == true ]]; then
       echo "Processing cores..."
     fi
     for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN}; do
       process_core $1 ${corefile}
     done
+  else
+    if [[ ${hit} == true ]]; then
+      echo "Skipping processing cores..."
+    fi
   fi
   exit $code
 }
