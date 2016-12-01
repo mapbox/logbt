@@ -111,6 +111,11 @@ function backtrace {
   exit $code
 }
 
+# at startup warn about existing corefiles, since these are unexpected
+for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN}; do
+  echo "WARNING: Found existing corefile at ${corefile}"
+done
+
 # Hook up function to run when logbt exits
 trap "backtrace $1" EXIT
 
