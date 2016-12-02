@@ -1,9 +1,13 @@
 
+# v1.5.0
+
+ - Fixed edge case in parsing corefile path on linux (when extra . in path to binary)
+
 # v1.4.0
 
-  - Fixed support for this situation: `logbt ./bash_script_that_calls_a_child_that_crashes.sh`. Previously
-    this would result in broken backtraces because we did not know what native program crashed and instead
-    incorrectly passed the non-native program name to gdb/lldb.
+ - Fixed support for this situation: `logbt ./bash_script_that_calls_a_child_that_crashes.sh`. Previously
+   this would result in broken backtraces because we did not know what native program crashed and instead
+   incorrectly passed the non-native program name to gdb/lldb.
 
 # v1.3.0
 
