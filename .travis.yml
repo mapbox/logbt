@@ -63,6 +63,9 @@ matrix:
       sudo: required
       dist: precise
       env: CXX=g++
+      addons:
+        apt:
+          packages: [ 'gdb']
       script:
         # only sudoless with nvm
         - nvm unload || true
