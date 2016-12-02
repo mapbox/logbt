@@ -1,10 +1,5 @@
 language: generic
 
-addons:
-  apt:
-    sources: [ 'ubuntu-toolchain-r-test']
-    packages: [ 'gdb','libstdc++-5-dev']
-
 script_linux: &linux
  # first test sudoless
  - sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p.%E" > /proc/sys/kernel/core_pattern'
@@ -36,11 +31,19 @@ matrix:
     - os: linux
       sudo: required
       dist: precise
+      before_script:
+        - git clone -b master --single-branch https://github.com/mapbox/mason.git ~/.mason
+        - .mason/mason install gdb 7.12
+        - sudo ln -s /usr/local/bin/gdb $(.mason/mason install gdb 7.12)/bin/gdb
       script: *linux
     - os: linux
       sudo: required
       dist: trusty
       script: *linux
+      addons:
+        apt:
+          sources: [ 'ubuntu-toolchain-r-test']
+          packages: [ 'gdb','libstdc++-5-dev']
     - os: osx
       script: *osx
 
