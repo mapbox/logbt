@@ -59,6 +59,23 @@ matrix:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
           packages: [ 'g++-6']
+    - os: linux
+      sudo: required
+      dist: precise
+      env: CXX=g++
+      script:
+        # only sudoless with nvm
+        - nvm unload || true
+        - rm -rf ./__nvm/ && git clone --depth 1 https://github.com/creationix/nvm.git ./__nvm
+        - source ./__nvm/nvm.sh
+        - nvm install 6
+        - nvm use 6
+        - node --version
+        - npm --version
+        - which node
+        - sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p.%E" > /proc/sys/kernel/core_pattern'
+        - echo "running test sudoless"
+        - ./test/unit.sh
       before_script:
         - git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
         - ./.mason/mason install gdb 7.12
