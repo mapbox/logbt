@@ -1,3 +1,9 @@
+before_install_default: &install_gdb
+  - git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
+  - ./.mason/mason install gdb 7.12
+  - sudo ln -s $(./.mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
+  - which gdb
+
 install_default: &install_node
   # install node in a way that ensures node will be on PATH for sudo and sudoless usage
   # install-node is a good solution given https://github.com/travis-ci/travis-ci/issues/1350
@@ -48,12 +54,9 @@ matrix:
       sudo: required
       dist: precise
       env: CXX=clang++
+      before_install: *install_gdb
       install: *install_node
       before_script:
-        - git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
-        - ./.mason/mason install gdb 7.12
-        - sudo ln -s $(./.mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
-        - which gdb
         - ./.mason/mason install clang++ 3.8.1
         - sudo ln -s $(./.mason/mason prefix clang++ 3.8.1)/bin/clang++ /usr/local/bin/clang++
         - which clang++
@@ -63,23 +66,25 @@ matrix:
       sudo: required
       dist: trusty
       env: CXX=g++-5
+      before_install: *install_gdb
       install: *install_node
       script: *linux
       addons:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
-          packages: [ 'gdb','g++-5']
+          packages: [ 'g++-5']
     - os: linux
       language: generic
       sudo: required
       dist: trusty
       env: CXX=g++-6
+      before_install: *install_gdb
       install: *install_node
       script: *linux
       addons:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
-          packages: [ gdb','g++-6']
+          packages: [ 'g++-6']
     - os: linux
       language: node_js
       node_js:
@@ -87,11 +92,8 @@ matrix:
       sudo: true
       dist: precise
       env: CXX=g++
+      before_install: *install_gdb
       install:
-        - git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
-        - ./.mason/mason install gdb 7.12
-        - export PATH=$(./.mason/mason prefix gdb 7.12)/bin:${PATH}
-        - which gdb
         - nvm unload || true
         - rm -rf ./__nvm/ && git clone --depth 1 https://github.com/creationix/nvm.git ./__nvm
         - source ./__nvm/nvm.sh
@@ -105,11 +107,6 @@ matrix:
         - sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p.%E" > /proc/sys/kernel/core_pattern'
         - echo "running test sudoless"
         - ./test/unit.sh
-      before_script:
-        - git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
-        - ./.mason/mason install gdb 7.12
-        - sudo ln -s $(./.mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
-        - which gdb
     - os: osx
       install: *install_node
       script: *osx
