@@ -18,12 +18,12 @@ if [[ $(uname -s) == 'Linux' ]]; then
 
   # if we have sudo then set core pattern
   if [[ $(id -u) == 0 ]]; then
-    echo "Setting $(cat /proc/sys/kernel/core_pattern) -> ${CORE_DIRECTORY}/core.%p"
-    echo "${CORE_DIRECTORY}/core.%p" > /proc/sys/kernel/core_pattern
+    echo "Setting $(cat /proc/sys/kernel/core_pattern) -> ${CORE_DIRECTORY}/core.%p.%E"
+    echo "${CORE_DIRECTORY}/core.%p.%E" > /proc/sys/kernel/core_pattern
   else
     # if we cannot modify the pattern we assert it has
     # already been set as we expect and need
-    if [[ $(cat /proc/sys/kernel/core_pattern) != '/tmp/logbt-coredumps/core.%p' ]]; then
+    if [[ $(cat /proc/sys/kernel/core_pattern) != '/tmp/logbt-coredumps/core.%p.%E' ]]; then
       error "unexpected core_pattern: $(cat /proc/sys/kernel/core_pattern)"
       exit 1
     fi
@@ -79,9 +79,9 @@ fi
 
 function process_core() {
   if [[ $(uname -s) == 'Darwin' ]]; then
-    lldb --file $1 --core $2 --batch -o 'thread backtrace all' -o 'quit'
+    lldb --core ${2} --batch -o 'thread backtrace all' -o 'quit'
   else
-    gdb $1 $2 -ex "set pagination 0" -ex "thread apply all bt" --batch
+    gdb ${1} ${2} -ex "set pagination 0" -ex "thread apply all bt" --batch
   fi
   # note: on OS X the -f avoids a hang on prompt 'remove write-protected regular file?'
   rm -f ${2}
@@ -90,14 +90,25 @@ function process_core() {
 function backtrace {
   local code=$?
   echo "$1 exited with code:${code}"
-  local COREFILE="${CORE_DIRECTORY}/core.${CHILD_PID}"
-  if [ -e ${COREFILE} ]; then
-    echo "Found core at ${COREFILE}"
-    process_core $1 ${COREFILE}
-  else
-    if [[ ${code} != 0 ]]; then
-        echo "No core found at ${COREFILE}"
+  if [[ $(uname -s) == 'Darwin' ]]; then
+    local COREFILE="${CORE_DIRECTORY}/core.${CHILD_PID}"
+    if [ -e ${COREFILE} ]; then
+      echo "Found core at ${COREFILE}"
+      process_core $1 ${COREFILE}
+    else
+      if [[ ${code} != 0 ]]; then
+          echo "No core found at ${COREFILE}"
+      fi
     fi
+  else
+    local SEARCH_PATTERN="core.${CHILD_PID}.*"
+    for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN}; do
+      echo "Found core at ${corefile}"
+      # extract program name from corefile
+      filename=$(basename "${corefile}")
+      binary_program="${filename##*.}"
+      process_core ${binary_program} ${corefile}
+    done
   fi
   local SEARCH_PATTERN="core.*"
   local hit=false
