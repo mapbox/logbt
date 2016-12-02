@@ -112,7 +112,7 @@ function backtrace {
       hit=true
     done
     if [[ ${hit} == false ]] && [[ ${code} != 0 ]]; then
-        echo "No core found at ${SEARCH_PATTERN_BY_PID}"
+        echo "No core found at ${CORE_DIRECTORY}/${SEARCH_PATTERN_BY_PID}"
     fi
   fi
   local SEARCH_PATTERN_NON_TRACKED="core.*"
@@ -126,6 +126,9 @@ function backtrace {
       echo "Processing cores..."
     fi
     for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN_NON_TRACKED}; do
+      filename=$(basename "${corefile}")
+      binary_program=/$(echo ${filename##*.\!} | tr '!' '/')
+      process_core ${binary_program} ${corefile}
       process_core $1 ${corefile}
     done
   else

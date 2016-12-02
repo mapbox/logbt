@@ -156,6 +156,20 @@ function main() {
 
     exit_early
 
+    # run bash script that runs node, which segfaults
+    run_test ./test/wrapper.sh
+
+    assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
+    assertEqual "$(stdout 2)" "running custom-script" "Emitted expected first line of stdout"
+    assertEqual "$(stdout 3)" "./test/wrapper.sh exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
+    assertContains "$(stdout 4)" "No core found at" "No core for direct child"
+    assertContains "$(stdout 5)" "Found non-tracked core at" "Found core file by directory search"
+    assertContains "$(stdout 6)" "Processing cores..." "Processing cores..."
+    assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
+
+    exit_early
+
     # test logbt with non-crashing program
     # and unexpected cores on the system from something
     # else that went wrong
