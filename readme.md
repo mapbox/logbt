@@ -1,8 +1,19 @@
 logbt
 -----
-Simple wrapper for running a backtrace when a program segfaults. Requires `gdb` on linux and `lldb` on OS X.
+
+Wrapper for running a backtrace when a program segfaults. Requires `gdb` on linux and `lldb` on OS X.
 
 [![Build Status](https://travis-ci.org/mapbox/logbt.svg?branch=master)](https://travis-ci.org/mapbox/logbt)
+
+Recommend install of gdb on linux:
+
+```
+git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
+./.mason/mason install gdb 7.12
+sudo ln -s $(./.mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
+```
+
+Recommended install of lldb on osx is to get latest XCode.
 
 ### Install
 
