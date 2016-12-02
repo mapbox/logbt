@@ -1,4 +1,9 @@
 
+
+# v1.6.0
+
+ - Fixed handling of non-tracked cores on linux
+
 # v1.5.0
 
  - Fixed edge case in parsing corefile path on linux (when extra . in path to binary)
