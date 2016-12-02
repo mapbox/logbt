@@ -1,5 +1,5 @@
 before_install_default: &install_gdb
-  - git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
+  - git clone -b master https://github.com/mapbox/mason.git .mason
   - ./.mason/mason install gdb 7.12
   - sudo ln -s $(./.mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
   - which gdb
@@ -95,10 +95,10 @@ matrix:
       before_install: *install_gdb
       install:
         - nvm unload || true
-        - rm -rf ./__nvm/ && git clone --depth 1 https://github.com/creationix/nvm.git ./__nvm
-        - source ./__nvm/nvm.sh
-        - nvm install 6
-        - nvm use 6
+        - rm -rf ~/.nvm/ && git clone --depth 1 https://github.com/creationix/nvm.git ~/.nvm/
+        - source ~/.nvm/nvm.sh
+        - nvm install 4
+        - nvm use 4
         - node --version
         - npm --version
         - which node
@@ -108,5 +108,6 @@ matrix:
         - echo "running test sudoless"
         - ./test/unit.sh
     - os: osx
+      language: generic
       install: *install_node
       script: *osx
