@@ -58,7 +58,7 @@ matrix:
       addons:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
-          packages: [ g++-6']
+          packages: [ 'g++-6']
       before_script:
         - git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
         - ./.mason/mason install gdb 7.12
