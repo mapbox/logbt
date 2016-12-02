@@ -109,7 +109,7 @@ function backtrace {
       filename=$(basename "${corefile}")
       binary_program=$(echo ${filename##*.} | tr '!' '/')
       process_core ${binary_program} ${corefile}
-      hit = true
+      hit=true
     done
     if [[ ${hit} == false ]] && [[ ${code} != 0 ]]; then
         echo "No core found at ${COREFILE}"
