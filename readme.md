@@ -9,7 +9,7 @@ Simple wrapper for running a backtrace when a program segfaults. Requires `gdb` 
 To /usr/local/bin:
 
 ```sh
-curl -sSfL https://github.com/mapbox/logbt/archive/v1.3.0.tar.gz | tar --gunzip --extract --strip-components=1 --exclude="*md" --exclude="test*" --directory=/usr/local
+curl -sSfL https://github.com/mapbox/logbt/archive/v1.4.0.tar.gz | tar --gunzip --extract --strip-components=1 --exclude="*md" --exclude="test*" --directory=/usr/local
 which logbt
 /usr/local/bin/logbt
 ```
@@ -17,7 +17,7 @@ which logbt
 Locally (perhaps if your user cannot write to /usr/local):
 
 ```sh
-curl -sSfL https://github.com/mapbox/logbt/archive/v1.3.0.tar.gz | tar --gunzip --extract --strip-components=2 --exclude="*md" --exclude="test*" --directory=.
+curl -sSfL https://github.com/mapbox/logbt/archive/v1.4.0.tar.gz | tar --gunzip --extract --strip-components=2 --exclude="*md" --exclude="test*" --directory=.
 ./logbt sleep 1
 Using existing corefile location: /cores/core.%P
 sleep exited with code:0
@@ -41,7 +41,7 @@ On Linux this means:
  - The `/proc/sys/kernel/core_pattern` file has been modified by root like:
 
  ```
- sudo bash -c "echo '/tmp/logbt-coredumps/core.%p' > /proc/sys/kernel/core_pattern"
+ sudo bash -c "echo '/tmp/logbt-coredumps/core.%p.%E' > /proc/sys/kernel/core_pattern"
  ```
 
 ### Our usage
@@ -62,7 +62,7 @@ After (linux):
 
 ```sh
 $ sudo ./bin/logbt node segfault.js
-Setting /tmp/logbt-coredumps/core.%p -> /tmp/logbt-coredumps/core.%p
+Setting /tmp/logbt-coredumps/core.%p.%E -> /tmp/logbt-coredumps/core.%p.%E
 running custom-node
 going to crash custom-node
 ./bin/logbt: line 112: 15425 Segmentation fault      (core dumped) $*

@@ -1,4 +1,10 @@
 
+# v1.4.0
+
+  - Fixed support for this situation: `logbt ./bash_script_that_calls_a_child_that_crashes.sh`. Previously
+    this would result in broken backtraces because we did not know what native program crashed and instead
+    incorrectly passed the non-native program name to gdb/lldb.
+
 # v1.3.0
 
  - Now displays backtraces for all likely descendant processes. This means that
