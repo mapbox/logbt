@@ -31,20 +31,39 @@ matrix:
     - os: linux
       sudo: required
       dist: precise
+      env: CXX=clang++
       before_script:
         - git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
         - ./.mason/mason install gdb 7.12
         - sudo ln -s $(./.mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
         - which gdb
+        - ./.mason/mason install clang++ 3.8.1
+        - sudo ln -s $(./.mason/mason prefix clang++ 3.8.1)/bin/clang++ /usr/local/bin/clang++
+        - which clang++
       script: *linux
     - os: linux
       sudo: required
       dist: trusty
+      env: CXX=g++-5
       script: *linux
       addons:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
-          packages: [ 'gdb','libstdc++-5-dev']
+          packages: [ 'gdb','g++-5']
+    - os: linux
+      sudo: required
+      dist: trusty
+      env: CXX=g++-6
+      script: *linux
+      addons:
+        apt:
+          sources: [ 'ubuntu-toolchain-r-test']
+          packages: [ 'g++-6']
+      before_script:
+        - git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
+        - ./.mason/mason install gdb 7.12
+        - sudo ln -s $(./.mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
+        - which gdb
     - os: osx
       script: *osx
 
