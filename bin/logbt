@@ -112,7 +112,7 @@ function backtrace {
       hit=true
     done
     if [[ ${hit} == false ]] && [[ ${code} != 0 ]]; then
-        echo "No core found at ${COREFILE}"
+        echo "No core found at ${SEARCH_PATTERN_BY_PID}"
     fi
   fi
   local SEARCH_PATTERN_NON_TRACKED="core.*"
