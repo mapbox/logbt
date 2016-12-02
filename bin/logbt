@@ -107,7 +107,7 @@ function backtrace {
       echo "Found core at ${corefile}"
       # extract program name from corefile
       filename=$(basename "${corefile}")
-      binary_program=$(echo ${filename##*.} | tr '!' '/')
+      binary_program=/$(echo ${filename##*.\!} | tr '!' '/')
       process_core ${binary_program} ${corefile}
       hit=true
     done
