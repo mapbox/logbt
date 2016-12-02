@@ -10,11 +10,10 @@ install_default: &install_node
   # which causes `source nvm.sh && sudo node ...` to fail
   - curl https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o run
   - chmod +x ./run
-  - export PLATFORM="linux"
   # clear out brew installed node otherwise its broken symlinks prevent our node
   # from being installed
-  - if [[ $(uname -s) == 'Darwin' ]]; then export PLATFORM="darwin" && brew rm node || true; fi;
-  - sudo NV=4.4.2 NP=${PLATFORM}-x64 OD=/usr/local ./run
+  - if [[ $(uname -s) == 'Darwin' ]]; then brew rm node || true; fi;
+  - sudo NV=4.4.2 NP=$(uname | tr A-Z a-z)-x64 OD=/usr/local ./run
   - bash --version
   # clear out default-installed node versions on linux to ensure out version is used
   - rm -rf ~/.nvm/
