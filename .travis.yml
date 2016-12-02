@@ -1,4 +1,19 @@
-language: generic
+install_default: &install_node
+  # install node in a way that ensures node will be on PATH for sudo and sudoless usage
+  # install-node is a good solution given https://github.com/travis-ci/travis-ci/issues/1350
+  # which causes `source nvm.sh && sudo node ...` to fail
+  - curl https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o run
+  - chmod +x ./run
+  - export PLATFORM="linux"
+  # clear out brew installed node otherwise its broken symlinks prevent our node
+  # from being installed
+  - if [[ $(uname -s) == 'Darwin' ]]; then export PLATFORM="darwin" && brew rm node || true; fi;
+  - sudo NV=4.4.2 NP=${PLATFORM}-x64 OD=/usr/local ./run
+  - bash --version
+  # clear out default-installed node versions on linux to ensure out version is used
+  - rm -rf ~/.nvm/
+  - which node
+  - node --version
 
 script_linux: &linux
  # first test sudoless
@@ -29,9 +44,11 @@ script_osx: &osx
 matrix:
   include:
     - os: linux
+      language: generic
       sudo: required
       dist: precise
       env: CXX=clang++
+      install: *install_node
       before_script:
         - git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
         - ./.mason/mason install gdb 7.12
@@ -42,32 +59,39 @@ matrix:
         - which clang++
       script: *linux
     - os: linux
+      language: generic
       sudo: required
       dist: trusty
       env: CXX=g++-5
+      install: *install_node
       script: *linux
       addons:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
           packages: [ 'gdb','g++-5']
     - os: linux
+      language: generic
       sudo: required
       dist: trusty
       env: CXX=g++-6
+      install: *install_node
       script: *linux
       addons:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
-          packages: [ 'g++-6']
+          packages: [ gdb','g++-6']
     - os: linux
-      sudo: required
+      language: node_js
+      node_js:
+        - '4'
+      sudo: true
       dist: precise
       env: CXX=g++
-      addons:
-        apt:
-          packages: [ 'gdb']
-      script:
-        # only sudoless with nvm
+      install:
+        - git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
+        - ./.mason/mason install gdb 7.12
+        - export PATH=$(./.mason/mason prefix gdb 7.12)/bin:${PATH}
+        - which gdb
         - nvm unload || true
         - rm -rf ./__nvm/ && git clone --depth 1 https://github.com/creationix/nvm.git ./__nvm
         - source ./__nvm/nvm.sh
@@ -76,6 +100,8 @@ matrix:
         - node --version
         - npm --version
         - which node
+      script:
+        # only sudoless with nvm
         - sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p.%E" > /proc/sys/kernel/core_pattern'
         - echo "running test sudoless"
         - ./test/unit.sh
@@ -85,21 +111,5 @@ matrix:
         - sudo ln -s $(./.mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
         - which gdb
     - os: osx
+      install: *install_node
       script: *osx
-
-install:
-  # install node in a way that ensures node will be on PATH for sudo and sudoless usage
-  # install-node is a good solution given https://github.com/travis-ci/travis-ci/issues/1350
-  # which causes `source nvm.sh && sudo node ...` to fail
-  - curl https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o run
-  - chmod +x ./run
-  - export PLATFORM="linux"
-  # clear out brew installed node otherwise its broken symlinks prevent our node
-  # from being installed
-  - if [[ $(uname -s) == 'Darwin' ]]; then export PLATFORM="darwin" && brew rm node || true; fi;
-  - sudo NV=4.4.2 NP=${PLATFORM}-x64 OD=/usr/local ./run
-  - bash --version
-  # clear out default-installed node versions on linux to ensure out version is used
-  - rm -rf ~/.nvm/
-  - which node
-  - node --version
