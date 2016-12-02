@@ -7,7 +7,7 @@ addons:
 
 script_linux: &linux
  # first test sudoless
- - sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p" > /proc/sys/kernel/core_pattern'
+ - sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p.%E" > /proc/sys/kernel/core_pattern'
  - echo "running test sudoless"
  - ./test/unit.sh
  # now set the kernfile to something wrong to ensure that
