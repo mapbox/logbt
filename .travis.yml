@@ -38,7 +38,7 @@ matrix:
         - sudo ln -s $(./.mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
         - which gdb
         - ./.mason/mason install clang++ 3.8.1
-        - export PATH=$(./.mason/mason prefix clang++ 3.8.1)/bin:${PATH}
+        - sudo ln -s $(./.mason/mason prefix clang++ 3.8.1)/bin/clang++ /usr/local/bin/clang++
         - which clang++
       script: *linux
     - os: linux
