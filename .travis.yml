@@ -34,7 +34,8 @@ matrix:
       before_script:
         - git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
         - ./.mason/mason install gdb 7.12
-        - sudo ln -s /usr/local/bin/gdb $(./.mason/mason install gdb 7.12)/bin/gdb
+        - sudo ln -s /usr/local/bin/gdb $(./.mason/mason prefix gdb 7.12)/bin/gdb
+        - which gdb
       script: *linux
     - os: linux
       sudo: required
