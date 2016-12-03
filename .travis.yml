@@ -35,7 +35,6 @@ script_linux: &linux
 
 script_osx: &osx
   # first test sudoless
- - sudo sysctl kern.corefile=/tmp/logbt-coredumps/core.%P
  - echo "running test sudoless"
  - ./test/unit.sh
  # now set the kernfile to something wrong to ensure that
