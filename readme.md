@@ -8,9 +8,9 @@ Wrapper for running a backtrace when a program segfaults. Requires `gdb` on linu
 Recommend install of gdb on linux:
 
 ```
-git clone -b master --single-branch https://github.com/mapbox/mason.git .mason
-./.mason/mason install gdb 7.12
-sudo ln -s $(./.mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
+mkdir mason && curl -sSfL https://github.com/mapbox/mason/archive/v0.2.0.tar.gz | tar --gunzip --extract --strip-components=1 --directory=./mason
+./mason/mason install gdb 7.12
+sudo ln -s $(./mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
 ```
 
 Recommended install of lldb on osx is to get latest XCode.

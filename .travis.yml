@@ -1,7 +1,7 @@
 before_install_default: &install_gdb
-  - git clone -b master https://github.com/mapbox/mason.git .mason
-  - ./.mason/mason install gdb 7.12
-  - sudo ln -s $(./.mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
+  - mkdir mason && curl -sSfL https://github.com/mapbox/mason/archive/v0.2.0.tar.gz | tar --gunzip --extract --strip-components=1 --directory=./mason
+  - ./mason/mason install gdb 7.12
+  - sudo ln -s $(./mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
   - which gdb
 
 install_default: &install_node
@@ -55,8 +55,8 @@ matrix:
       before_install: *install_gdb
       install: *install_node
       before_script:
-        - ./.mason/mason install clang++ 3.8.1
-        - sudo ln -s $(./.mason/mason prefix clang++ 3.8.1)/bin/clang++ /usr/local/bin/clang++
+        - ./mason/mason install clang++ 3.8.1
+        - sudo ln -s $(./mason/mason prefix clang++ 3.8.1)/bin/clang++ /usr/local/bin/clang++
         - which clang++
       script: *linux
     - os: linux
