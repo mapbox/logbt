@@ -1,11 +1,11 @@
 logbt
 -----
 
-Wrapper for running a backtrace when a program segfaults. Requires `gdb` on linux and `lldb` on OS X.
+Also known as "Log Backtrace", this is a bash wrapper for displaying a backtrace when a program crashes. Requires `gdb` on linux and `lldb` on OS X.
 
 [![Build Status](https://travis-ci.org/mapbox/logbt.svg?branch=master)](https://travis-ci.org/mapbox/logbt)
 
-Recommend install of gdb on linux:
+Recommended install of gdb on linux:
 
 ```
 mkdir mason && curl -sSfL https://github.com/mapbox/mason/archive/v0.2.0.tar.gz | tar --gunzip --extract --strip-components=1 --directory=./mason
