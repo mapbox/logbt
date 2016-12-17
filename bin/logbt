@@ -4,12 +4,6 @@ set -eu
 set -o pipefail
 shopt -s nullglob
 
-# default directory for corefiles
-# Linux
-export CORE_DIRECTORY_DEFAULT_LINUX=/tmp/logbt-coredumps
-# OSX
-export CORE_DIRECTORY_DEFAULT_OSX=/cores
-
 function error() {
   >&2 echo "$@"
   exit 1
@@ -90,11 +84,8 @@ function warn_on_existing_cores() {
 }
 
 function launch_and_wait() {
-
+  local core_directory=/tmp/logbt-coredumps
   if [[ $(uname -s) == 'Linux' ]]; then
-
-    local core_directory=${CORE_DIRECTORY_DEFAULT_LINUX}
-
     if ! which gdb > /dev/null; then
       error "Could not find required command 'gdb'"
     fi
@@ -106,17 +97,13 @@ function launch_and_wait() {
     else
       # if we cannot modify the pattern we assert it has
       # already been set as we expect and need
-      if [[ $(cat /proc/sys/kernel/core_pattern) != '${CORE_DIRECTORY_DEFAULT}/core.%p.%E' ]]; then
+      if [[ $(cat /proc/sys/kernel/core_pattern) != '/tmp/logbt-coredumps/core.%p.%E' ]]; then
         error "unexpected core_pattern: $(cat /proc/sys/kernel/core_pattern)"
         exit 1
       fi
       echo "Using existing corefile location: $(cat /proc/sys/kernel/core_pattern)"
     fi
-
-  elif [[ $(uname -s) == 'Darwin' ]]; then
-
-    local core_directory=${CORE_DIRECTORY_DEFAULT_OSX}
-
+  else
     if ! which lldb > /dev/null; then
       error "Could not find required command 'lldb'"
       exit 1
@@ -144,8 +131,6 @@ function launch_and_wait() {
     # Recommend running with the following setting to only show crashes
     # in the notification center
     # defaults write com.apple.CrashReporter UseUNC 1
-  else
-    error "Unsupported platform: $(uname -s)"
   fi
 
   if [[ ! -d ${core_directory} ]]; then
@@ -182,39 +167,4 @@ function launch_and_wait() {
   wait ${CHILD_PID}  
 }
 
-function setup_and_exit() {
-  echo TODO
-  exit 0
-}
-
-for i in "$@"
-do
-case $i in
-    --setup)
-    setup_and_exit
-    shift
-    ;;
-    *)
-esac
-done
-
-function usage() {
-  >&2 echo "Usage for logbt:"
-  >&2 echo ""
-  >&2 echo "Setup logbt (requires root privileges):"
-  >&2 echo ""
-  >&2 echo "$ sudo logbt --setup"
-  >&2 echo ""
-  >&2 echo "Launch another program with logbt:"
-  >&2 echo ""
-  >&2 echo "$ logbt ./program"
-  >&2 echo ""
-  >&2 echo "Error: Please either pass the --setup option or a path to a program to run"
-  exit 1
-}
-
-# if we get here, then commence launching program
-if [[ ! ${1:-} ]]; then
-  usage
-fi
 launch_and_wait $@
