@@ -115,6 +115,15 @@ function main() {
 
     mkdir -p ${WORKING_DIR}
 
+    # test logbt misuage
+    export RESULT=0
+    ./bin/logbt >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    assertEqual "${RESULT}" "1" "invalid usage (no args) should result in error code of 1"
+    # check stderr
+    assertContains "$(stderr 1)" "Usage for logbt:" "Emitted expected usage error"
+    # check stdout
+    assertEqual "$(stdout 1)" "" "no stdout on usage error"
+
     # test logbt with non-crashing program
     run_test node -e "console.error('stderr');console.log('stdout')"
     assertEqual "${RESULT}" "0" "emitted expected signal"
