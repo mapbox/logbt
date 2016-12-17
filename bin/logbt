@@ -93,18 +93,18 @@ function backtrace {
   if [[ $(uname -s) == 'Darwin' ]]; then
     local COREFILE="${CORE_DIRECTORY}/core.${CHILD_PID}"
     if [ -e ${COREFILE} ]; then
-      echo "Found core at ${COREFILE}"
+      echo "Found corefile at ${COREFILE}"
       process_core $1 ${COREFILE}
     else
       if [[ ${code} != 0 ]]; then
-          echo "No core found at ${COREFILE}"
+          echo "No corefile found at ${COREFILE}"
       fi
     fi
   else
     local SEARCH_PATTERN_BY_PID="core.${CHILD_PID}.*"
     local hit=false
     for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN_BY_PID}; do
-      echo "Found core at ${corefile}"
+      echo "Found corefile at ${corefile}"
       # extract program name from corefile
       filename=$(basename "${corefile}")
       binary_program=/$(echo ${filename##*.\!} | tr '!' '/')
@@ -112,13 +112,13 @@ function backtrace {
       hit=true
     done
     if [[ ${hit} == false ]] && [[ ${code} != 0 ]]; then
-        echo "No core found at ${CORE_DIRECTORY}/${SEARCH_PATTERN_BY_PID}"
+        echo "No corefile found at ${CORE_DIRECTORY}/${SEARCH_PATTERN_BY_PID}"
     fi
   fi
   local SEARCH_PATTERN_NON_TRACKED="core.*"
   local hit=false
   for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN_NON_TRACKED}; do
-    echo "Found non-tracked core at ${corefile}"
+    echo "Found corefile (non-tracked) at ${corefile}"
     hit=true
   done
   if [[ ${code} != 0 ]]; then
@@ -142,7 +142,7 @@ function warn_on_existing_cores() {
   local SEARCH_PATTERN_NON_TRACKED="core.*"
   # at startup warn about existing corefiles, since these are unexpected
   for corefile in ${CORE_DIRECTORY}/${SEARCH_PATTERN_NON_TRACKED}; do
-    echo "WARNING: Found existing corefile at ${corefile}"
+    echo "WARNING: Found corefile (existing) at ${corefile}"
   done
 }
 
