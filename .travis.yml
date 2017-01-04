@@ -56,5 +56,5 @@ install:
   - which node
 
 script:
- - sudo logbt --setup
+ - sudo ./bin/logbt --setup
  - ./test/unit.sh
