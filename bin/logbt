@@ -182,7 +182,7 @@ function launch_and_wait() {
     fi
   fi
 
-  ensure_directory_is_writeable ${core_directory}
+  #ensure_directory_is_writeable ${core_directory}
 
   warn_on_existing_cores ${core_directory}
 
@@ -225,7 +225,7 @@ function setup_and_exit() {
   #  fi
   #fi
 
-  ensure_directory_is_writeable ${core_directory}
+  #ensure_directory_is_writeable ${core_directory}
   error_on_existing_cores ${core_directory}
 
   exit 0
