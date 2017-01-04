@@ -4,47 +4,6 @@ before_install_default: &install_gdb
   - sudo ln -s $(./mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
   - which gdb
 
-install_default: &install_node
-  # install node in a way that ensures node will be on PATH for sudo and sudoless usage
-  # install-node is a good solution given https://github.com/travis-ci/travis-ci/issues/1350
-  # which causes `source nvm.sh && sudo node ...` to fail
-  - curl https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o run
-  - chmod +x ./run
-  # clear out brew installed node otherwise its broken symlinks prevent our node
-  # from being installed
-  - if [[ $(uname -s) == 'Darwin' ]]; then brew rm node || true; fi;
-  - sudo NV=4.4.2 NP=$(uname | tr A-Z a-z)-x64 OD=/usr/local ./run
-  - bash --version
-  # clear out default-installed node versions on linux to ensure out version is used
-  - rm -rf ~/.nvm/
-  - which node
-  - node --version
-
-script_linux: &linux
- # first test sudoless
- - sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p.%E" > /proc/sys/kernel/core_pattern'
- - echo "running test sudoless"
- - ./test/unit.sh
- # now set the kernfile to something wrong to ensure that
- # the next run as sudo will fix and work
- - echo ""
- - echo "running tests again as sudo"
- - sudo bash -c 'echo "dummy" > /proc/sys/kernel/core_pattern'
- # now run tests as sudo
- - sudo ./test/unit.sh
-
-script_osx: &osx
-  # first test sudoless
- - echo "running test sudoless"
- - ./test/unit.sh
- # now set the kernfile to something wrong to ensure that
- # the next run as sudo will fix and work
- - echo ""
- - echo "running tests again as sudo"
- - sudo sysctl kern.corefile=dummy
- # now run tests as sudo
- - sudo ./test/unit.sh
-
 matrix:
   include:
     - os: linux
@@ -53,20 +12,16 @@ matrix:
       dist: precise
       env: CXX=clang++
       before_install: *install_gdb
-      install: *install_node
       before_script:
         - ./mason/mason install clang++ 3.8.1
         - sudo ln -s $(./mason/mason prefix clang++ 3.8.1)/bin/clang++ /usr/local/bin/clang++
         - which clang++
-      script: *linux
     - os: linux
       language: generic
       sudo: required
       dist: trusty
       env: CXX=g++-5
       before_install: *install_gdb
-      install: *install_node
-      script: *linux
       addons:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
@@ -77,35 +32,29 @@ matrix:
       dist: trusty
       env: CXX=g++-6
       before_install: *install_gdb
-      install: *install_node
-      script: *linux
       addons:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
           packages: [ 'g++-6']
     - os: linux
-      language: node_js
-      node_js:
-        - '4'
+      language: generic
       sudo: true
       dist: precise
       env: CXX=g++
       before_install: *install_gdb
-      install:
-        - nvm unload || true
-        - rm -rf ~/.nvm/ && git clone --depth 1 https://github.com/creationix/nvm.git ~/.nvm/
-        - source ~/.nvm/nvm.sh
-        - nvm install 4
-        - nvm use 4
-        - node --version
-        - npm --version
-        - which node
-      script:
-        # only sudoless with nvm
-        - sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p.%E" > /proc/sys/kernel/core_pattern'
-        - echo "running test sudoless"
-        - ./test/unit.sh
     - os: osx
       language: generic
-      install: *install_node
-      script: *osx
+
+install:
+  - nvm unload || true
+  - rm -rf ~/.nvm/ && git clone --depth 1 https://github.com/creationix/nvm.git ~/.nvm/
+  - source ~/.nvm/nvm.sh
+  - nvm install 4
+  - nvm use 4
+  - node --version
+  - npm --version
+  - which node
+
+script:
+ - sudo logbt --setup
+ - ./test/unit.sh
