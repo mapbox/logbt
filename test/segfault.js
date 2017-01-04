@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 process.title = 'custom-node'
 
 console.log('running',process.title);

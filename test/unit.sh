@@ -24,14 +24,6 @@ else
 fi
 
 function teardown() {
-    # if running locally as sudo on osx then restore defaults for next run
-    if [[ ${TRAVIS:-false} == false ]]; then
-        if [[ $(uname -s) == 'Darwin' ]] && [[ $(id -u) == 0 ]]; then
-            echo "NOTICE: running os x cleanup, resetting core location to default"
-            sysctl kern.corefile=/cores/core.%P
-        fi
-    fi
-    # cleanup test files
     rm -rf ${WORKING_DIR}/
     rm -f ${STDOUT_LOGS}
     rm -f ${STDERR_LOGS}
@@ -105,24 +97,38 @@ function run_test() {
 }
 
 function main() {
-    if [[ $(id -u) == 0 ]]; then
-      echo "Starting to run tests as root"
-      export EXPECTED_STARTUP_MESSAGE=" -> "
-    else
-      echo "Starting to run tests as normal user (sudoless)"
-      export EXPECTED_STARTUP_MESSAGE="Using existing corefile"
-    fi
+    export EXPECTED_STARTUP_MESSAGE="Using corefile location: "
+    export EXPECTED_STARTUP_MESSAGE2="Using core_pattern: "
 
     mkdir -p ${WORKING_DIR}
+
+    # test logbt misusage
+    export RESULT=0
+    ./bin/logbt >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    assertEqual "${RESULT}" "1" "invalid usage (no args) should result in error code of 1"
+    # check stderr
+    assertContains "$(stderr 1)" "Usage for logbt:" "Emitted expected usage error"
+    # check stdout
+    assertEqual "$(stdout 1)" "" "no stdout on usage error"
+
+    # test logbt version
+    export RESULT=0
+    ./bin/logbt --version >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    assertEqual "${RESULT}" "0" "Should result in error code of 0"
+    # check stdout
+    assertContains "$(stdout 1)" "v" "Should contain v for version number"
+    # check stderr
+    assertEqual "$(stderr 1)" "" "Should be empty"
 
     # test logbt with non-crashing program
     run_test node -e "console.error('stderr');console.log('stdout')"
     assertEqual "${RESULT}" "0" "emitted expected signal"
     # check stdout
-    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
-    assertEqual "$(stdout 2)" "stdout" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 3)" "node exited with code:0" "Emitted expected second line of stdout"
-    assertEqual "$(stdout 4)" "" "No line 4 present"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+    assertEqual "$(stdout 3)" "stdout" "Emitted expected first line of stdout"
+    assertEqual "$(stdout 4)" "node exited with code:0" "Emitted expected second line of stdout"
+    assertEqual "$(stdout 5)" "" "No line 4 present"
     # check stderr
     assertEqual "$(stderr 1)" "stderr" "Emitted expected first line of stderr"
     assertEqual "$(stderr 2)" "" "No line 3 present"
@@ -131,13 +137,14 @@ function main() {
     exit_early
 
     # run node process that segfaults after 1000ms
-    run_test node test/segfault.js
+    run_test test/segfault.js
 
     assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
-    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
-    assertEqual "$(stdout 2)" "running custom-node" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 3)" "node exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
-    assertContains "$(stdout 4)" "Found corefile at" "Found corefile for given PID"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+    assertEqual "$(stdout 3)" "running custom-node" "Emitted expected first line of stdout"
+    assertEqual "$(stdout 4)" "test/segfault.js exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
+    assertContains "$(stdout 5)" "Found corefile at" "Found corefile for given PID"
     assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
 
     exit_early
@@ -146,12 +153,13 @@ function main() {
     run_test node test/children.js
 
     assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
-    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
-    assertEqual "$(stdout 2)" "running custom-node" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 3)" "node exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
-    assertContains "$(stdout 4)" "No corefile found at" "No core for direct child"
-    assertContains "$(stdout 5)" "Found corefile (non-tracked) at" "Found corefile by directory search"
-    assertContains "$(stdout 6)" "Processing cores..." "Processing cores..."
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+    assertEqual "$(stdout 3)" "running custom-node" "Emitted expected first line of stdout"
+    assertEqual "$(stdout 4)" "node exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
+    assertContains "$(stdout 5)" "No corefile found at" "No core for direct child"
+    assertContains "$(stdout 6)" "Found corefile (non-tracked) at" "Found corefile by directory search"
+    assertContains "$(stdout 7)" "Processing cores..." "Processing cores..."
     assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
 
     exit_early
@@ -160,12 +168,13 @@ function main() {
     run_test ./test/wrapper.sh
 
     assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
-    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
-    assertEqual "$(stdout 2)" "running custom-script" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 3)" "./test/wrapper.sh exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
-    assertContains "$(stdout 4)" "No corefile found at" "No core for direct child"
-    assertContains "$(stdout 5)" "Found corefile (non-tracked) at" "Found corefile by directory search"
-    assertContains "$(stdout 6)" "Processing cores..." "Processing cores..."
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+    assertEqual "$(stdout 3)" "running custom-script" "Emitted expected first line of stdout"
+    assertEqual "$(stdout 4)" "./test/wrapper.sh exited with code:${SIGSEGV_CODE}" "Emitted expected second line of stdout"
+    assertContains "$(stdout 5)" "No corefile found at" "No core for direct child"
+    assertContains "$(stdout 6)" "Found corefile (non-tracked) at" "Found corefile by directory search"
+    assertContains "$(stdout 7)" "Processing cores..." "Processing cores..."
     assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
 
     exit_early
@@ -179,12 +188,13 @@ function main() {
     run_test node -e "console.error('stderr');console.log('stdout')"
     assertEqual "${RESULT}" "0" "emitted expected signal"
     # check stdout
-    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
-    assertContains "$(stdout 2)" "WARNING: Found corefile (existing) at" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 3)" "stdout" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 4)" "node exited with code:0" "Emitted expected second line of stdout"
-    assertContains "$(stdout 5)" "Found corefile (non-tracked) at" "Expected to find core"
-    assertEqual "$(stdout 6)" "Skipping processing cores..." "Expected to skip core"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+    assertContains "$(stdout 3)" "WARNING: Found corefile (existing) at" "Emitted expected first line of stdout"
+    assertEqual "$(stdout 4)" "stdout" "Emitted expected first line of stdout"
+    assertEqual "$(stdout 5)" "node exited with code:0" "Emitted expected second line of stdout"
+    assertContains "$(stdout 6)" "Found corefile (non-tracked) at" "Expected to find core"
+    assertEqual "$(stdout 7)" "Skipping processing cores..." "Expected to skip core"
     # check stderr
     assertEqual "$(stderr 1)" "stderr" "Emitted expected first line of stderr"
     assertEqual "$(stderr 2)" "" "No line 3 present"
@@ -202,10 +212,11 @@ function main() {
     run_test ${WORKING_DIR}/run-test
 
     assertEqual "${RESULT}" "${SIGABRT_CODE}" "emitted expected signal"
-    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
-    assertContains "$(stdout 2)" "WARNING: Found corefile (existing) at" "Found previous non-tracked corefile"
-    assertEqual "$(stdout 3)" "${WORKING_DIR}/run-test exited with code:${SIGABRT_CODE}" "Emitted expected first line of stdout"
-    assertContains "$(stdout 4)" "Found corefile at" "Found corefile for given PID"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+    assertContains "$(stdout 3)" "WARNING: Found corefile (existing) at" "Found previous non-tracked corefile"
+    assertEqual "$(stdout 4)" "${WORKING_DIR}/run-test exited with code:${SIGABRT_CODE}" "Emitted expected first line of stdout"
+    assertContains "$(stdout 5)" "Found corefile at" "Found corefile for given PID"
     assertContains "$(all_lines)" "abort.cpp:2" "Found expected line number in backtrace output"
 
     exit_early
@@ -220,9 +231,10 @@ function main() {
     run_test ${WORKING_DIR}/run-test
 
     assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal from segfault"
-    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
-    assertEqual "$(stdout 2)" "${WORKING_DIR}/run-test exited with code:${SIGSEGV_CODE}" "Emitted expected first line of stdout"
-    assertContains "$(stdout 3)" "Found corefile at" "Found corefile for given PID"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+    assertEqual "$(stdout 3)" "${WORKING_DIR}/run-test exited with code:${SIGSEGV_CODE}" "Emitted expected first line of stdout"
+    assertContains "$(stdout 4)" "Found corefile at" "Found corefile for given PID"
     assertContains "$(all_lines)" "segfault.cpp:2" "Found expected line number in backtrace output"
 
     exit_early
@@ -237,9 +249,10 @@ function main() {
     run_test ${WORKING_DIR}/run-test
 
     assertEqual "${RESULT}" "${SIGBUS_CODE}" "emitted expected signal from bus error"
-    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
-    assertEqual "$(stdout 2)" "${WORKING_DIR}/run-test exited with code:${SIGBUS_CODE}" "Emitted expected first line of stdout"
-    assertContains "$(stdout 3)" "Found corefile at" "Found corefile for given PID"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+    assertEqual "$(stdout 3)" "${WORKING_DIR}/run-test exited with code:${SIGBUS_CODE}" "Emitted expected first line of stdout"
+    assertContains "$(stdout 4)" "Found corefile at" "Found corefile for given PID"
     assertContains "$(all_lines)" "bus_error.cpp:2" "Found expected line number in backtrace output"
 
     exit_tests
