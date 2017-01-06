@@ -175,12 +175,12 @@ function launch_and_wait() {
   fi
 
   # osx does not need the directory to exist, does linux?
-  if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
-    if [[ ! -d ${core_directory} ]]; then
-      error "Expected directory at '${core_directory}'"
-      exit 1
-    fi
-  fi
+  #if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
+  #  if [[ ! -d ${core_directory} ]]; then
+  #    error "Expected directory at '${core_directory}'"
+  #    exit 1
+  #  fi
+  #fi
 
   #ensure_directory_is_writeable ${core_directory}
 
