@@ -57,4 +57,5 @@ install:
 
 script:
  - sudo ./bin/logbt --setup
+ - ./bin/logbt --test
  - ./test/unit.sh

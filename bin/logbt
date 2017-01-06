@@ -174,13 +174,10 @@ function launch_and_wait() {
     exit 1
   fi
 
-  # osx does not need the directory to exist, does linux?
-  #if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
-  #  if [[ ! -d ${core_directory} ]]; then
-  #    error "Expected directory at '${core_directory}'"
-  #    exit 1
-  #  fi
-  #fi
+  if [[ ! -d ${core_directory} ]]; then
+    error "Expected directory at '${core_directory}'"
+    exit 1
+  fi
 
   #ensure_directory_is_writeable ${core_directory}
 
@@ -217,16 +214,46 @@ function setup_and_exit() {
   validate_core_pattern ${core_pattern}
   local core_directory=$(dirname ${core_pattern})
 
-  # osx does not need the directory to exist, does linux?
-  #if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
-  #  if [[ ! -d ${core_directory} ]]; then
-  #    echo "Creating directory for core files at '${core_directory}'"
-  #    mkdir -p -m a+w ${core_directory}
-  #  fi
-  #fi
+  if [[ ! -d ${core_directory} ]]; then
+    echo "Creating directory for core files at '${core_directory}'"
+    mkdir -p -m a+w ${core_directory}
+  fi
 
-  #ensure_directory_is_writeable ${core_directory}
   error_on_existing_cores ${core_directory}
+
+  exit 0
+
+}
+
+function test_and_exit() {
+
+  # create a program that crashes itself
+  echo '#!/usr/bin/env bash' > /tmp/crasher.sh
+  echo 'kill -SIGSEGV $$' >> /tmp/crasher.sh
+  chmod +x /tmp/crasher.sh
+  # run it in logbt
+  RETURN=0
+  ./bin/logbt /tmp/crasher.sh >/tmp/logbt-stdout 2>/tmp/logbt-stderr || RETURN=$?
+  if [[ ${RETURN} != 139 ]] || [[ ! $(cat /tmp/logbt-stdout) =~ "Found corefile at" ]]; then
+    cat /tmp/logbt-stdout
+    cat /tmp/logbt-stderr
+    error "Expected return code of 139 and a corefile to be generated"
+  fi
+  if [[ ! $(cat /tmp/logbt-stdout) =~ "Found corefile at" ]]; then
+    cat /tmp/logbt-stdout
+    cat /tmp/logbt-stderr
+    error "Expected a corefile to be generated"
+  fi
+  if [[ ! $(cat /tmp/logbt-stderr) =~ "core dumped" ]]; then
+    cat /tmp/logbt-stdout
+    cat /tmp/logbt-stderr
+    error "Expected stderr to contain 'core dumped'"
+  fi
+  echo "Success"
+  # cleanup
+  rm /tmp/logbt-stderr
+  rm /tmp/logbt-stdout
+  rm /tmp/crasher.sh
 
   exit 0
 
@@ -257,6 +284,10 @@ do
 case $i in
     --setup)
     setup_and_exit
+    shift
+    ;;
+    --test)
+    test_and_exit
     shift
     ;;
     --version)
