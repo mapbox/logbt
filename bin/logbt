@@ -270,7 +270,11 @@ function usage() {
   >&2 echo ""
   >&2 echo "$ logbt ./program"
   >&2 echo ""
-  >&2 echo "Error: Please either pass the --setup option or a path to a program to run"
+  >&2 echo "Test logbt is functioning"
+  >&2 echo ""
+  >&2 echo "$ logbt --test"
+  >&2 echo ""
+  >&2 echo "Error: Please either pass the path to a program to run or a command (--test, --setup, --version)"
   exit 1
 }
 

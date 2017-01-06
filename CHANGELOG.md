@@ -1,7 +1,8 @@
 # v2.0.0
 
  - Now you must first run `logbt --setup` with root privileges to setup the core_pattern
- - Now `logbt` does not need to run as root after setup
+ - Now `logbt` does not need to run as root after `logbt --setup`
+ - Added `logbt --test` command to ensure backtraces are working
  - Refactored internal code to avoid mutable global variables
 
 # v1.6.0
