@@ -1,8 +1,16 @@
-before_install_default: &install_gdb
+before_install_linux: &linux_setup
   - mkdir mason && curl -sSfL https://github.com/mapbox/mason/archive/v0.2.0.tar.gz | tar --gunzip --extract --strip-components=1 --directory=./mason
   - ./mason/mason install gdb 7.12
   - sudo ln -s $(./mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
   - which gdb
+  # To ensure that the --setup command is working we start off by
+  # manually creating a bogus core pattern
+  - sudo bash -c 'echo "dummy" > /proc/sys/kernel/core_pattern'
+
+before_install_osx: &osx_setup
+  # To ensure that the --setup command is working we start off by
+  # manually creating a bogus core pattern
+  - sudo sysctl kern.corefile=dummy
 
 matrix:
   include:
@@ -11,7 +19,7 @@ matrix:
       sudo: required
       dist: precise
       env: CXX=clang++
-      before_install: *install_gdb
+      before_install: *linux_setup
       before_script:
         - ./mason/mason install clang++ 3.8.1
         - sudo ln -s $(./mason/mason prefix clang++ 3.8.1)/bin/clang++ /usr/local/bin/clang++
@@ -21,7 +29,7 @@ matrix:
       sudo: required
       dist: trusty
       env: CXX=g++-5
-      before_install: *install_gdb
+      before_install: *linux_setup
       addons:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
@@ -31,7 +39,7 @@ matrix:
       sudo: required
       dist: trusty
       env: CXX=g++-6
-      before_install: *install_gdb
+      before_install: *linux_setup
       addons:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
@@ -41,9 +49,10 @@ matrix:
       sudo: true
       dist: precise
       env: CXX=g++
-      before_install: *install_gdb
+      before_install: *linux_setup
     - os: osx
       language: generic
+      before_install: *osx_setup
 
 install:
   - nvm unload || true
