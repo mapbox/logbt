@@ -87,9 +87,9 @@ You must setup `logbt` before use:
 sudo logbt --setup
 ```
 
-This is required on Linux and optional on OS X (if the systems default `kern.corefile` setting is intact).
-
 This command sets and validates the system core pattern to ensure it is set in a way logbt can understand and track.
+
+This is required on Linux and optional on OS X if the systems default `kern.corefile` setting is intact. This means that `$(sysctl -n kern.corefile) == '/cores/core.%P'`.
 
 Other options:
 
