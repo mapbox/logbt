@@ -233,7 +233,7 @@ function test_and_exit() {
   chmod +x /tmp/crasher.sh
   # run it in logbt
   RETURN=0
-  ./bin/logbt /tmp/crasher.sh >/tmp/logbt-stdout 2>/tmp/logbt-stderr || RETURN=$?
+  ${BASH_SOURCE} /tmp/crasher.sh >/tmp/logbt-stdout 2>/tmp/logbt-stderr || RETURN=$?
   if [[ ${RETURN} != 139 ]] || [[ ! $(cat /tmp/logbt-stdout) =~ "Found corefile at" ]]; then
     cat /tmp/logbt-stdout
     cat /tmp/logbt-stderr
