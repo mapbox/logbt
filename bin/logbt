@@ -133,7 +133,6 @@ function ensure_directory_is_writeable() {
   touch ${core_directory}/test.txt || WRITE_RETURN=$?
   if [[ ${WRITE_RETURN} != 0 ]]; then
     error "Permissions problem: unable to write to ${core_directory} (exited with ${WRITE_RETURN})"
-    exit 1
   else
     # cleanup from test
     rm ${core_directory}/test.txt
@@ -156,7 +155,6 @@ function validate_core_pattern() {
   local core_pattern=${1}
   if [[ ! ${core_pattern} =~ ${REQUIRED_PATTERN} ]]; then
     error "unexpected core_pattern: ${core_pattern}"
-    exit 1
   fi  
 }
 function launch_and_wait() {
@@ -171,12 +169,10 @@ function launch_and_wait() {
   # ensure we have a debugger installed
   if ! which ${DEBUGGER} > /dev/null; then
     error "Could not find required command '${DEBUGGER}'"
-    exit 1
   fi
 
   if [[ ! -d ${core_directory} ]]; then
     error "Expected directory at '${core_directory}'"
-    exit 1
   fi
 
   #ensure_directory_is_writeable ${core_directory}
