@@ -222,7 +222,8 @@ function setup_and_exit() {
 }
 
 function test_and_exit() {
-
+  ulimit -c unlimited
+  # note: this will only create a corefile on osx with bash 4.x (not the apple 3.x)
   # create a program that crashes itself
   echo '#!/usr/bin/env bash' > /tmp/crasher.sh
   echo 'kill -SIGSEGV $$' >> /tmp/crasher.sh
