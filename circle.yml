@@ -10,5 +10,5 @@ dependencies:
 
 test:
   override:
-    - docker run --privileged logbt-precise
+    - sudo docker run --privileged logbt-precise
     - cat /proc/sys/kernel/core_pattern
