@@ -175,7 +175,7 @@ function launch_and_wait() {
     error "Expected directory at '${core_directory}'"
   fi
 
-  #ensure_directory_is_writeable ${core_directory}
+  ensure_directory_is_writeable ${core_directory}
 
   warn_on_existing_cores ${core_directory}
 

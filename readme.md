@@ -43,6 +43,14 @@ Thread 5 (Thread 0x7f51f5c18700 (LWP 15429)):
 
  - Linux and OS X
 
+### Docker considerations
+
+Docker containers must be run with the `privileged` parameter (`docker run -i --privileged ...`) in order for the `logbt --setup` command to work (it needs to write to `/proc/sys/kernel/core_pattern`). Beware that the value of `/proc/sys/kernel/core_pattern` comes from the host and modifying it in a container will change the value for the host.
+
+For using docker+logbt with AWS, the ECS [container definition](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#container_definition_security) is how you ask for `privileged` runs.
+
+Note: `--privileged` only applies to `docker run` and not `docker build` (refs https://github.com/docker/docker/issues/1916)
+
 ### Depends
 
 Requires `gdb` on linux and `lldb` on OS X.
@@ -96,7 +104,3 @@ Other options:
  - `logbt --test`: tests that logbt is functioning correctly. Should be run after `logbt --setup`
  - `logbt --version`: Prints the `logbt` version
  - `logbt --help`: Prints the `logbt` usage help
-
-### Usage with docker
-
-Docker containers must be run with the `privileged` parameter in order for the `logbt --setup` command to work. For the ECS service this is set in the [container definition](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#container_definition_security).
