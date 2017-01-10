@@ -1,23 +1,14 @@
 machine:
-  node:
-    version: 4.4.2
+  services:
+    - docker
 
 dependencies:
-  pre:
-    - mkdir mason && curl -sSfL https://github.com/mapbox/mason/archive/v0.4.0.tar.gz | tar --gunzip --extract --strip-components=1 --directory=./mason
-    - ./mason/mason install gdb 7.12
-    - sudo ln -s $(./mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
-    - which gdb
-    - ./mason/mason install clang++ 3.9.1
-    - sudo ln -s $(./mason/mason prefix clang++ 3.9.1)/bin/clang++ /usr/local/bin/clang++
-    - which clang++
-   # To ensure that the --setup command is working we start off by
-    # manually creating a bogus core pattern
-    - sudo bash -c 'echo "dummy" > /proc/sys/kernel/core_pattern'
- 
+  override:
+    - docker info
+    - cat /proc/sys/kernel/core_pattern
+    - docker build --rm=false -t logbt-precise -f Dockerfile.ubuntu-precise .
+
 test:
   override:
-    - sudo ./bin/logbt --setup
-    - ./bin/logbt --test
-    - ./test/unit.sh
- 
+    - docker run --privileged logbt-precise
+    - cat /proc/sys/kernel/core_pattern
