@@ -29,16 +29,17 @@ script_default: &run_script
  - ./bin/logbt --test
  - ./test/unit.sh
 
+services:
+  - docker
+
 matrix:
   include:
     - os: linux
       sudo: required
-      services:
-        - docker
       dist: precise
       script:
         - docker build -t logbt-precise -f Dockerfile.ubuntu-precise .
-        - sudo docker run --privileged logbt-precise
+        - docker run --privileged logbt-precise
         - cat /proc/sys/kernel/core_pattern
     - os: linux
       sudo: required
@@ -54,7 +55,7 @@ matrix:
     - os: linux
       sudo: required
       dist: trusty
-      env: CXX=g++-5
+      env: CXX=g++-6
       addons:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
