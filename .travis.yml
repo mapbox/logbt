@@ -1,3 +1,5 @@
+language: generic
+
 before_install_linux: &linux_setup
   - mkdir mason && curl -sSfL https://github.com/mapbox/mason/archive/v0.2.0.tar.gz | tar --gunzip --extract --strip-components=1 --directory=./mason
   - ./mason/mason install gdb 7.12
@@ -12,49 +14,7 @@ before_install_osx: &osx_setup
   # manually creating a bogus core pattern
   - sudo sysctl kern.corefile=dummy
 
-matrix:
-  include:
-    - os: linux
-      language: generic
-      sudo: required
-      dist: precise
-      env: CXX=clang++
-      before_install: *linux_setup
-      before_script:
-        - ./mason/mason install clang++ 3.8.1
-        - sudo ln -s $(./mason/mason prefix clang++ 3.8.1)/bin/clang++ /usr/local/bin/clang++
-        - which clang++
-    - os: linux
-      language: generic
-      sudo: required
-      dist: trusty
-      env: CXX=g++-5
-      before_install: *linux_setup
-      addons:
-        apt:
-          sources: [ 'ubuntu-toolchain-r-test']
-          packages: [ 'g++-5']
-    - os: linux
-      language: generic
-      sudo: required
-      dist: trusty
-      env: CXX=g++-6
-      before_install: *linux_setup
-      addons:
-        apt:
-          sources: [ 'ubuntu-toolchain-r-test']
-          packages: [ 'g++-6']
-    - os: linux
-      language: generic
-      sudo: true
-      dist: precise
-      env: CXX=g++
-      before_install: *linux_setup
-    - os: osx
-      language: generic
-      before_install: *osx_setup
-
-install:
+install_default: &run_install
   - nvm unload || true
   - rm -rf ~/.nvm/ && git clone --depth 1 https://github.com/creationix/nvm.git ~/.nvm/
   - source ~/.nvm/nvm.sh
@@ -64,7 +24,50 @@ install:
   - npm --version
   - which node
 
-script:
+script_default: &run_script
  - sudo ./bin/logbt --setup
  - ./bin/logbt --test
  - ./test/unit.sh
+
+matrix:
+  include:
+    - os: linux
+      sudo: required
+      services:
+        - docker
+      dist: precise
+      script:
+        - docker build -t logbt-precise -f Dockerfile.ubuntu-precise .
+        - sudo docker run --privileged logbt-precise
+        - cat /proc/sys/kernel/core_pattern
+    - os: linux
+      sudo: required
+      dist: precise
+      env: CXX=clang++
+      before_install: *linux_setup
+      install: *run_install
+      before_script:
+        - ./mason/mason install clang++ 3.8.1
+        - sudo ln -s $(./mason/mason prefix clang++ 3.8.1)/bin/clang++ /usr/local/bin/clang++
+        - which clang++
+      script: *run_script
+    - os: linux
+      sudo: required
+      dist: trusty
+      env: CXX=g++-5
+      addons:
+        apt:
+          sources: [ 'ubuntu-toolchain-r-test']
+          packages: [ 'g++-6']
+      before_install: *linux_setup
+      install: *run_install
+      script: *run_script
+    - os: linux
+      sudo: true
+      dist: precise
+      env: CXX=g++
+      before_install: *linux_setup
+      install: *run_install
+      script: *run_script
+    - os: osx
+      before_install: *osx_setup
