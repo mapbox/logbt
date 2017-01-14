@@ -39,6 +39,7 @@ matrix:
   include:
     - os: linux
       env: DOCKER=1
+      dist: trusty
       script:
         - docker build -t logbt-precise -f Dockerfile.ubuntu-precise .
         - sudo ./bin/logbt --setup
@@ -46,6 +47,7 @@ matrix:
         - cat /proc/sys/kernel/core_pattern
     - os: linux
       env: DOCKER=1
+      dist: trusty
       script:
         - docker build -t logbt-precise -f Dockerfile.ubuntu-precise .
         - docker run --privileged logbt-precise
