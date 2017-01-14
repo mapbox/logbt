@@ -17,6 +17,7 @@ export CXX=${CXX:-g++}
 export SIGSEGV_CODE="139"
 export SIGABRT_CODE="134"
 export SIGFPE_CODE="136"
+export TIMEOUT_CODE="124"
 if [[ $(uname -s) == 'Darwin' ]]; then
     export SIGBUS_CODE="138"
 else
@@ -134,7 +135,30 @@ function main() {
     assertEqual "$(stderr 1)" "stderr" "Emitted expected first line of stderr"
     assertEqual "$(stderr 2)" "" "No line 3 present"
 
-    # bail early if this trivial case is not working
+    exit_early
+
+    # run node process that waits to exit for set time
+    # And ensure timeout is shorter and everything closes down correctly
+    timeout_cmd="timeout 2 ./bin/logbt node test/wait.js 20"
+    ${timeout_cmd} >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    echo -e "\033[1m\033[32mok\033[0m - ran ${timeout_cmd} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    assertEqual "${RESULT}" "${TIMEOUT_CODE}" "emitted expected timeout code"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+    assertContains "$(stdout 3)" "Process id is" "Emitted expected line of stdout"
+    assertEqual "$(stdout 4)" "Running for 20 s" "Emitted expected line of stdout"
+    assertEqual "$(stdout 5)" "Running tic # 0" "Emitted expected line of stdout"
+    assertEqual "$(stdout 6)" "Running tic # 1" "Emitted expected line of stdout"
+    assertEqual "$(stdout 7)" "Running tic # 2" "Emitted expected line of stdout"
+    assertEqual "$(stdout 8)" "Running tic # 3" "Emitted expected line of stdout"
+    assertEqual "$(stdout 9)" "Running tic # 4" "Emitted expected line of stdout"
+    assertEqual "$(stdout 10)" "Running tic # 5" "Emitted expected line of stdout"
+    assertEqual "$(stdout 11)" "Running tic # 6" "Emitted expected line of stdout"
+    assertEqual "$(stdout 12)" "Running tic # 7" "Emitted expected line of stdout"
+    assertEqual "$(stdout 13)" "Running tic # 8" "Emitted expected line of stdout"
+    assertEqual "$(stdout 14)" "node exited with code:0" "Emitted expected line of stdout"
+    assertEqual "$(stdout 15)" "" "no line 15 present"
+
     exit_early
 
     # run node process that segfaults after 1000ms
@@ -143,7 +167,7 @@ function main() {
     assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
-    assertEqual "$(stdout 3)" "running custom-node" "Emitted expected first line of stdout"
+    assertEqual "$(stdout 3)" "running custom-node" "Emitted expected line of stdout"
     assertEqual "$(stdout 4)" "test/segfault.js exited with code:${SIGSEGV_CODE}" "Emitted expected stdout with exit code"
     assertContains "$(stdout 5)" "Found corefile at" "Found corefile for given PID"
     assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
