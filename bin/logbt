@@ -172,7 +172,8 @@ function launch_and_wait() {
   fi
 
   if [[ ! -d ${core_directory} ]]; then
-    error "Expected directory at '${core_directory}'"
+    echo "Creating directory for core files at '${core_directory}'"
+    mkdir -p -m a+w ${core_directory}
   fi
 
   ensure_directory_is_writeable ${core_directory}
