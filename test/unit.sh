@@ -155,9 +155,7 @@ function main() {
     assertEqual "$(stdout 10)" "Running tic # 5" "Emitted expected line of stdout"
     assertEqual "$(stdout 11)" "Running tic # 6" "Emitted expected line of stdout"
     assertEqual "$(stdout 12)" "Running tic # 7" "Emitted expected line of stdout"
-    assertEqual "$(stdout 13)" "Running tic # 8" "Emitted expected line of stdout"
-    assertEqual "$(stdout 14)" "node exited with code:0" "Emitted expected line of stdout"
-    assertEqual "$(stdout 15)" "" "no line 15 present"
+    assertContains "$(all_lines)" "node exited with code:0" "Emitted expected line of stdout"
 
     exit_early
 
