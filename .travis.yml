@@ -13,7 +13,7 @@ before_install_osx: &osx_setup
   # To ensure that the --setup command is working we start off by
   # manually creating a bogus core pattern
   - sudo sysctl kern.corefile=dummy
-  - brew install coreutils
+  - brew install coreutils || true
 
 install_default: &run_install
   - nvm unload || true
@@ -33,17 +33,24 @@ script_default: &run_script
 services:
   - docker
 
+sudo: required
+
 matrix:
   include:
     - os: linux
-      sudo: required
-      dist: precise
+      env: DOCKER=1
+      script:
+        - docker build -t logbt-precise -f Dockerfile.ubuntu-precise .
+        - sudo ./bin/logbt --setup
+        - docker run logbt-precise
+        - cat /proc/sys/kernel/core_pattern
+    - os: linux
+      env: DOCKER=1
       script:
         - docker build -t logbt-precise -f Dockerfile.ubuntu-precise .
         - docker run --privileged logbt-precise
         - cat /proc/sys/kernel/core_pattern
     - os: linux
-      sudo: required
       dist: precise
       env: CXX=clang++
       before_install: *linux_setup
@@ -54,7 +61,6 @@ matrix:
         - which clang++
       script: *run_script
     - os: linux
-      sudo: required
       dist: trusty
       env: CXX=g++-6
       addons:
@@ -65,7 +71,6 @@ matrix:
       install: *run_install
       script: *run_script
     - os: linux
-      sudo: true
       dist: precise
       env: CXX=g++
       before_install: *linux_setup
