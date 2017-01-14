@@ -41,7 +41,7 @@ matrix:
       env: DOCKER=1
       dist: trusty
       script:
-        - docker build -t logbt-precise -f Dockerfile.ubuntu-precise .
+        - docker build -t logbt-precise -f Dockerfile.ubuntu-precise-readonly .
         - sudo ./bin/logbt --setup
         - docker run logbt-precise
         - cat /proc/sys/kernel/core_pattern
