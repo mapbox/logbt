@@ -7,6 +7,7 @@ shopt -s nullglob
 PLATFORM_UNAME=$(uname -s)
 REQUIRED_FILENAME="core"
 LOGBT_VERSION="v2.0.0"
+BASE_CORE_DIRECTORY=/tmp/logbt-coredumps
 
 if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
   REQUIRED_PATTERN="${REQUIRED_FILENAME}.%p.%E"
@@ -139,6 +140,10 @@ function ensure_directory_is_writeable() {
   fi  
 }
 
+function get_target_core_pattern() {
+  echo ${BASE_CORE_DIRECTORY}/${REQUIRED_PATTERN}
+}
+
 function get_core_pattern() {
   if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
     local core_pattern=$(cat /proc/sys/kernel/core_pattern)
@@ -196,15 +201,13 @@ function launch_and_wait() {
 }
 
 function setup_and_exit() {
-
-  DEFAULT_CORE_DIR=/tmp/logbt
-
+  local settable_core_pattern=$(get_target_core_pattern)
   if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
-    echo "Setting $(cat /proc/sys/kernel/core_pattern) -> ${DEFAULT_CORE_DIR}/${REQUIRED_PATTERN}"
-    echo "${DEFAULT_CORE_DIR}/${REQUIRED_PATTERN}" > /proc/sys/kernel/core_pattern
+    echo "Setting $(cat /proc/sys/kernel/core_pattern) -> ${settable_core_pattern}"
+    echo "${settable_core_pattern}" > /proc/sys/kernel/core_pattern
   elif [[ ${PLATFORM_UNAME} == "Darwin" ]]; then
-    echo "Setting $(sysctl -n kern.corefile) -> ${DEFAULT_CORE_DIR}/${REQUIRED_PATTERN}"
-    sysctl kern.corefile=${DEFAULT_CORE_DIR}/${REQUIRED_PATTERN}
+    echo "Setting $(sysctl -n kern.corefile) -> ${settable_core_pattern}"
+    sysctl kern.corefile=${settable_core_pattern}
   fi
 
   local core_pattern=$(get_core_pattern)
@@ -291,6 +294,14 @@ case $i in
     --test)
     test_and_exit
     shift
+    ;;
+    --current-pattern)
+    get_core_pattern
+    exit 0
+    ;;
+    --target-pattern)
+    get_target_core_pattern
+    exit 0
     ;;
     --version)
     get_version
