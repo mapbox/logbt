@@ -6,9 +6,9 @@ dependencies:
   override:
     - docker info
     - cat /proc/sys/kernel/core_pattern
-    - docker build --rm=false -t logbt-precise -f Dockerfile.ubuntu-precise .
+    - docker build --rm=false -t logbt-springmeyer -f Dockerfile.springmeyer-logbt-readonly .
 
 test:
   override:
-    - sudo docker run --privileged logbt-precise
+    - sudo docker run logbt-springmeyer
     - cat /proc/sys/kernel/core_pattern
