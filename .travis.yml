@@ -16,11 +16,15 @@ before_install_osx: &osx_setup
   - brew install coreutils || true
 
 install_default: &run_install
+  # disable node that may be already enabled via nvm
   - nvm unload || true
-  - rm -rf ~/.nvm/ && git clone --depth 1 https://github.com/creationix/nvm.git ~/.nvm/
-  - source ~/.nvm/nvm.sh
-  - nvm install 4
-  - nvm use 4
+  # install-node is a good solution given https://github.com/travis-ci/travis-ci/issues/1350
+  # which causes `source nvm.sh && sudo node ...` to fail
+  - curl https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o run
+  - chmod +x ./run
+  # clear out brew installed node otherwise install-node may fail trying to overwrite it
+  - if [[ $(uname -s) == 'Darwin' ]]; then brew rm node || true; fi;
+  - sudo NV=4.4.3 NP=$(uname | tr A-Z a-z)-x64 OD=/usr/local ./run
   - node --version
   - npm --version
   - which node
