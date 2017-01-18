@@ -1,4 +1,9 @@
 
+if (!process.argv[2]) {
+    console.error('Please pass integer interval to wait for (in seconds)');
+    process.exit(1);
+}
+
 console.log('Process id is',process.pid);
 
 var interval = process.argv[2]*100;

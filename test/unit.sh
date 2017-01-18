@@ -93,8 +93,8 @@ function all_lines() {
 
 function run_test() {
     export RESULT=0
-    ./bin/logbt $@ >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
-    echo -e "\033[1m\033[32mok\033[0m - ran ./bin/logbt $@ >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    ./bin/logbt --watch $@ >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    echo -e "\033[1m\033[32mok\033[0m - ran ./bin/logbt --watch $@ >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     export passed=$((passed+1))
 }
 
@@ -106,7 +106,7 @@ function main() {
 
     # test logbt misusage
     export RESULT=0
-    ./bin/logbt >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    ./bin/logbt --watch >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
     assertEqual "${RESULT}" "1" "invalid usage (no args) should result in error code of 1"
     # check stderr
     assertContains "$(stderr 1)" "Usage for logbt:" "Emitted expected usage error"
@@ -139,7 +139,7 @@ function main() {
 
     # run node process that waits to exit for set time
     # And ensure timeout is shorter and everything closes down correctly
-    timeout_cmd="timeout 2 ./bin/logbt node test/wait.js 20"
+    timeout_cmd="timeout 2 ./bin/logbt --watch node test/wait.js 20"
     ${timeout_cmd} >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
     echo -e "\033[1m\033[32mok\033[0m - ran ${timeout_cmd} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     assertEqual "${RESULT}" "${TIMEOUT_CODE}" "emitted expected timeout code"

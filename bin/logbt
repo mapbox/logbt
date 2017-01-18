@@ -284,9 +284,20 @@ function get_version() {
   exit 0
 }
 
+if [[ ! ${1:-} ]]; then
+  usage
+fi
+
 for i in "$@"
 do
 case $i in
+    --watch)
+    if [[ ! ${2:-} ]]; then
+      usage
+    fi
+    shift
+    launch_and_wait $@
+    ;;
     --setup)
     setup_and_exit
     shift
@@ -314,9 +325,3 @@ case $i in
     *)
 esac
 done
-
-# if we get here, then commence launching program
-if [[ ! ${1:-} ]]; then
-  usage
-fi
-launch_and_wait $@

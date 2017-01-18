@@ -78,7 +78,7 @@ curl -sSfL https://github.com/mapbox/logbt/archive/v1.6.0.tar.gz | tar --gunzip 
 
 ### Usage
 
-There are two steps to using `logbt`. First you set it up and second you launch your program with it.
+There are two main modes to using `logbt`. First you run `--setup` and second you run `--watch` to launch your program with it.
 
 #### Logbt setup
 
@@ -92,7 +92,14 @@ This command sets the system `core_pattern` to ensure it is ready for `logbt` to
 
 This is required on Linux (modifies `/proc/sys/kernel/core_pattern`) and optional on OS X if the systems default `kern.corefile` setting is intact (This means on OS X that `$(sysctl -n kern.corefile) == '/cores/core.%P'`)
 
-Other options:
+Common default values for `core_pattern` on linux (which do not work with `logbt`) are:
+
+  - `|/usr/libexec/abrt-hook-ccpp %s %c %p %u %g %t e` Seen on Centos 6
+  - `|/usr/share/apport/apport %p %s %c` Seen on Ubuntu Precise
+
+#### logbt --watch
+
+### Additional options
 
  - `logbt --test`: tests that logbt is functioning correctly. Should be run after `logbt --setup`
  - `logbt --current-pattern`: displays the current `core_pattern` value on the system (`/proc/sys/kernel/core_pattern` on linux and `sysctl -n kern.corefile` on OS X)
