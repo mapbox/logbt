@@ -14,5 +14,7 @@ RUN curl -sSfL https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o r
   chmod +x ./run && \
   NV=4.4.3 NP=$(uname | tr A-Z a-z)-x64 OD=/usr/local ./run
 
+RUN cat /proc/sys/kernel/core_pattern
+
 CMD ./bin/logbt --test && \
     ./test/unit.sh

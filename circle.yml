@@ -10,5 +10,5 @@ dependencies:
 
 test:
   override:
-    - sudo docker run logbt-springmeyer
+    - docker run logbt-springmeyer
     - cat /proc/sys/kernel/core_pattern
