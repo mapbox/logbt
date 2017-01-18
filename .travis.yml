@@ -14,6 +14,7 @@ before_install_osx: &osx_setup
   # manually creating a bogus core pattern
   - sudo sysctl kern.corefile=dummy
   - brew install coreutils || true
+  - export PATH=$(brew --prefix)/opt/coreutils/libexec/gnubin:${PATH}
 
 install_default: &run_install
   # disable node that may be already enabled via nvm
@@ -44,7 +45,7 @@ matrix:
     - os: linux
       env: DOCKER=1
       dist: trusty
-      sudo: false
+      sudo: required
       script:
         - docker build -t logbt-springmeyer -f Dockerfile.springmeyer-logbt-readonly .
         - cat /proc/sys/kernel/core_pattern
