@@ -37,13 +37,21 @@ script_default: &run_script
 services:
   - docker
 
-sudo: required
-
 matrix:
   include:
     - os: linux
       env: DOCKER=1
       dist: trusty
+      sudo: false
+      script:
+        - docker build -t logbt-springmeyer -f Dockerfile.springmeyer-logbt-readonly .
+        - cat /proc/sys/kernel/core_pattern
+        - docker run logbt-springmeyer
+        - cat /proc/sys/kernel/core_pattern
+    - os: linux
+      env: DOCKER=1
+      dist: trusty
+      sudo: required
       script:
         - docker build -t logbt-precise -f Dockerfile.ubuntu-precise-readonly .
         - sudo ./bin/logbt --setup
@@ -52,12 +60,14 @@ matrix:
     - os: linux
       env: DOCKER=1
       dist: trusty
+      sudo: required
       script:
         - docker build -t logbt-precise -f Dockerfile.ubuntu-precise .
         - docker run --privileged logbt-precise
         - cat /proc/sys/kernel/core_pattern
     - os: linux
       dist: precise
+      sudo: required
       env: CXX=clang++
       before_install: *linux_setup
       install: *run_install
@@ -68,6 +78,7 @@ matrix:
       script: *run_script
     - os: linux
       dist: trusty
+      sudo: required
       env: CXX=g++-6
       addons:
         apt:
@@ -78,6 +89,7 @@ matrix:
       script: *run_script
     - os: linux
       dist: precise
+      sudo: required
       env: CXX=g++
       before_install: *linux_setup
       install: *run_install
