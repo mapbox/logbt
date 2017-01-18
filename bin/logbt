@@ -303,19 +303,11 @@ case $i in
     get_target_core_pattern
     exit 0
     ;;
-    --version)
+    -v | --version)
     get_version
     shift
     ;;
-    -v)
-    get_version
-    shift
-    ;;
-    --help)
-    usage
-    shift
-    ;;
-    -h)
+    -h | --help)
     usage
     shift
     ;;
