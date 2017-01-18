@@ -42,14 +42,7 @@ Thread 5 (Thread 0x7f51f5c18700 (LWP 15429)):
 ### Supports
 
  - Linux and OS X
-
-### Docker considerations
-
-Docker containers must be run with the `privileged` parameter (`docker run -i --privileged ...`) in order for the `logbt --setup` command to work (it needs to write to `/proc/sys/kernel/core_pattern`). Beware that the value of `/proc/sys/kernel/core_pattern` comes from the host and modifying it in a container will change the value for the host.
-
-For using docker+logbt with AWS, the ECS [container definition](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#container_definition_security) is how you ask for `privileged` runs.
-
-Note: `--privileged` only applies to `docker run` and not `docker build` (refs https://github.com/docker/docker/issues/1916)
+ - Docker (see [Docker](#Docker-considerations) below)
 
 ### Depends
 
@@ -95,12 +88,30 @@ You must setup `logbt` before use:
 sudo logbt --setup
 ```
 
-This command sets and validates the system core pattern to ensure it is set in a way logbt can understand and track.
+This command sets the system `core_pattern` to ensure it is ready for `logbt` to use.
 
-This is required on Linux and optional on OS X if the systems default `kern.corefile` setting is intact. This means that `$(sysctl -n kern.corefile) == '/cores/core.%P'`.
+This is required on Linux (modifies `/proc/sys/kernel/core_pattern`) and optional on OS X if the systems default `kern.corefile` setting is intact (This means on OS X that `$(sysctl -n kern.corefile) == '/cores/core.%P'`)
 
 Other options:
 
  - `logbt --test`: tests that logbt is functioning correctly. Should be run after `logbt --setup`
+ - `logbt --current-pattern`: displays the current `core_pattern` value on the system (`/proc/sys/kernel/core_pattern` on linux and `sysctl -n kern.corefile` on OS X)
+ - `logbt --target-pattern`: displays the target `core_pattern` value that `logbt --setup` will apply to the system which is `/tmp/logbt-coredumps/core.%p.%e` on linux and `/tmp/logbt-coredumps/core.%P` on OS X)
  - `logbt --version`: Prints the `logbt` version
  - `logbt --help`: Prints the `logbt` usage help
+
+### Docker considerations
+
+Docker linux containers inherit their kernel settings from the linux host. Because the `core_pattern` modified by [`logbt --setup`](#Logbt-setup) is kernel-level the `--setup` command must be either be run as root on the linux host (recommended) or within a container run with the `--privileged` flag.
+
+If you try to run `logbt --setup` in a container without the `--privileged` flag you will see an error like: `/proc/sys/kernel/core_pattern: Read-only file system`
+
+Beware that running `logbt --setup` in a `privileged` container will change the value for the host (when the host is linux).
+
+The `--privileged` only applies to `docker run` and not `docker build` (refs https://github.com/docker/docker/issues/1916)
+
+With AWS, the ECS [container definition](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#container_definition_security) is how you ask for `privileged` runs.
+
+The `logbt --setup` command does not work on some CI systems like https://circleci.com (neither on the host or in the container). This is because on circleci `/proc/sys/kernel/core_pattern` is read-only on the host (perhaps because the host machine is actually a docker container). It appears that to run in `--privileged` you need to be an [enterprise customer](https://github.com/circleci/image-builder/#ubuntu-1404-xxl-enterprise).
+
+Running `logbt` on travis works great with ["sudo-enabled" machines](https://docs.travis-ci.com/user/ci-environment/#Virtualization-environments). These machines allow you to run `sudo logbt --setup` on the host or run `logbt --setup` in a `privileged` container. However similar to circleci the `logbt --setup` command does not work on https://travis-ci.org "container-based" (aka `sudo:false`) machines.

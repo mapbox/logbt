@@ -47,15 +47,6 @@ matrix:
       dist: trusty
       sudo: required
       script:
-        - docker build -t logbt-springmeyer -f Dockerfile.springmeyer-logbt-readonly .
-        - cat /proc/sys/kernel/core_pattern
-        - docker run logbt-springmeyer
-        - cat /proc/sys/kernel/core_pattern
-    - os: linux
-      env: DOCKER=1
-      dist: trusty
-      sudo: required
-      script:
         - docker build -t logbt-precise -f Dockerfile.ubuntu-precise-readonly .
         - sudo ./bin/logbt --setup
         - docker run logbt-precise
