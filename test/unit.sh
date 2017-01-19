@@ -18,14 +18,14 @@ export SIGFPE_CODE="136"
 export TIMEOUT_CODE="124"
 export SIGTERM_CODE="143"
 export SIGILL_CODE="132"
-
+export SIGHUP_CODE="129"
 
 if [[ $(uname -s) == 'Darwin' ]]; then
     export SIGBUS_CODE="138"
-    export USR1_CODE="158"
+    export SIGUSR1_CODE="158"
 else
     export SIGBUS_CODE="135"
-    export USR1_CODE="138"
+    export SIGUSR1_CODE="138"
 fi
 
 function teardown() {
@@ -163,17 +163,31 @@ function main() {
 
     exit_early
 
-    # test sending custom USR1 signal (158) to logbt
+    # test sending HUP signal to logbt
     watcher_command="./bin/logbt --watch node test/wait.js 20"
     # background logbt and grab its PID
     ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
     echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     sleep 1
-    kill -USR1 ${LOGBT_PID}
+    kill -HUP ${LOGBT_PID}
     RESULT=0
     wait ${LOGBT_PID} || export RESULT=$?
-    assertEqual "${RESULT}" "${USR1_CODE}" "emitted expected USR1 code"
-    assertContains "$(all_lines)" "[logbt] received signal:${USR1_CODE} (USR1)" "Found USR exit"
+    assertEqual "${RESULT}" "${SIGHUP_CODE}" "emitted expected HUP code"
+    assertContains "$(all_lines)" "[logbt] received signal:${SIGHUP_CODE} (HUP)" "Found HUP exit"
+    assertContains "$(all_lines)" "[logbt] sending SIGTERM to node" "Found SIGTERM send"
+    exit_early
+
+    # test sending TERM signal to logbt
+    watcher_command="./bin/logbt --watch node test/wait.js 20"
+    # background logbt and grab its PID
+    ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
+    echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    sleep 1
+    kill -TERM ${LOGBT_PID}
+    RESULT=0
+    wait ${LOGBT_PID} || export RESULT=$?
+    assertEqual "${RESULT}" "${SIGTERM_CODE}" "emitted expected TERM code"
+    assertContains "$(all_lines)" "[logbt] received signal:${SIGTERM_CODE} (TERM)" "Found TERM exit"
     assertContains "$(all_lines)" "[logbt] sending SIGTERM to node" "Found SIGTERM send"
     exit_early
 

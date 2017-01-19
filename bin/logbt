@@ -171,7 +171,10 @@ function validate_core_pattern() {
 
 function trap_with_arg() {
   func="$1" ; shift
-  for sig in {TERM,INT,HUP,TRAP,PIPE,STOP,SEGV}; do
+  # note: SIGINT only works when logbt is a "foreground" process
+  # such that ctrl-c will send SIGINT but `kill -INT <pid>` will not
+  # http://stackoverflow.com/a/14697034
+  for sig in {TERM,INT,HUP}; do
     trap "$func $@ $sig" $sig
   done
 }
