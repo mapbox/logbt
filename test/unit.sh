@@ -19,6 +19,7 @@ export TIMEOUT_CODE="124"
 export SIGTERM_CODE="143"
 export SIGILL_CODE="132"
 export SIGHUP_CODE="129"
+export SIGKILL_CODE="137"
 
 if [[ $(uname -s) == 'Darwin' ]]; then
     export SIGBUS_CODE="138"
@@ -220,7 +221,7 @@ function main() {
     exit_early
 
     # run bash script that runs node, which segfaults
-    run_test ./test/wrapper.sh
+    run_test ./test/wrapper.sh SIGSEGV
 
     assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
@@ -231,6 +232,15 @@ function main() {
     assertContains "$(stdout 6)" "Found corefile (non-tracked) at" "Found corefile by directory search"
     assertContains "$(stdout 7)" "[logbt] Processing cores..." "Processing cores..."
     assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
+
+    # run bash script that runs node, which is killed (as if it OOM'd and was stopped with kill -9)
+    run_test ./test/wrapper.sh SIGKILL
+
+    assertEqual "${RESULT}" "${SIGKILL_CODE}" "emitted expected signal"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+    assertEqual "$(stdout 3)" "running custom-script" "Emitted expected first line of stdout"
+    assertContains "$(stdout 4)" "exit with code:${SIGKILL_CODE} (KILL)" "Emitted expected stdout with exit code"
 
     exit_early
 
