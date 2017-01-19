@@ -173,7 +173,7 @@ function main() {
     RESULT=0
     wait ${LOGBT_PID} || export RESULT=$?
     assertEqual "${RESULT}" "${USR1_CODE}" "emitted expected USR1 code"
-    assertContains "$(all_lines)" "logbt] received signal:158 (USR1)" "Found USR exit"
+    assertContains "$(all_lines)" "[logbt] received signal:${USR1_CODE} (USR1)" "Found USR exit"
     assertContains "$(all_lines)" "[logbt] sending SIGTERM to node" "Found SIGTERM send"
     exit_early
 
