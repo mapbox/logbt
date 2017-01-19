@@ -13,7 +13,7 @@ before_install_osx: &osx_setup
   # To ensure that the --setup command is working we start off by
   # manually creating a bogus core pattern
   - sudo sysctl kern.corefile=dummy
-  - brew install coreutils || true
+  - brew install coreutils bash || true
   - export PATH=$(brew --prefix)/opt/coreutils/libexec/gnubin:${PATH}
   - which lldb
   - lldb --version
