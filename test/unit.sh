@@ -18,13 +18,14 @@ export SIGFPE_CODE="136"
 export TIMEOUT_CODE="124"
 export SIGTERM_CODE="143"
 export SIGILL_CODE="132"
-export USR1_CODE="158"
+
 
 if [[ $(uname -s) == 'Darwin' ]]; then
     export SIGBUS_CODE="138"
+    export USR1_CODE="158"
 else
-    # TODO: on linux this is also 135? Why?
     export SIGBUS_CODE="135"
+    export USR1_CODE="138"
 fi
 
 function teardown() {
