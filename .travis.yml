@@ -42,8 +42,15 @@ services:
 
 matrix:
   include:
+      env: DOCKER=writable-proc
+      dist: trusty
+      sudo: required
+      script:
+        - docker build -t logbt-precise -f Dockerfile.ubuntu-precise-writable-proc .
+        - docker run --volume /proc:/writable-proc logbt-precise
+        - cat /proc/sys/kernel/core_pattern
     - os: linux
-      env: DOCKER=1
+      env: DOCKER=readonly
       dist: trusty
       sudo: required
       script:
@@ -52,7 +59,7 @@ matrix:
         - docker run logbt-precise
         - cat /proc/sys/kernel/core_pattern
     - os: linux
-      env: DOCKER=1
+      env: DOCKER=privileged
       dist: trusty
       sudo: required
       script:
