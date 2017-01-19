@@ -184,7 +184,7 @@ function main() {
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
     assertEqual "$(stdout 3)" "running custom-node" "Emitted expected line of stdout"
-    assertEqual "$(stdout 4)" "logbt saw 'test/segfault.js' exit with code:${SIGSEGV_CODE} (SEGV)" "Emitted expected stdout with exit code"
+    assertEqual "$(stdout 4)" "[logbt] saw 'test/segfault.js' exit with code:${SIGSEGV_CODE} (SEGV)" "Emitted expected stdout with exit code"
     assertContains "$(stdout 5)" "Found corefile at" "Found corefile for given PID"
     assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
 
@@ -197,7 +197,7 @@ function main() {
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
     assertEqual "$(stdout 3)" "running custom-node" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 4)" "logbt saw 'node' exit with code:${SIGSEGV_CODE} (SEGV)" "Emitted expected stdout with exit code"
+    assertEqual "$(stdout 4)" "[logbt] saw 'node' exit with code:${SIGSEGV_CODE} (SEGV)" "Emitted expected stdout with exit code"
     assertContains "$(stdout 5)" "No corefile found at" "No core for direct child"
     assertContains "$(stdout 6)" "Found corefile (non-tracked) at" "Found corefile by directory search"
     assertContains "$(stdout 7)" "[logbt] Processing cores..." "Processing cores..."
@@ -227,7 +227,6 @@ function main() {
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
     assertContains "$(stdout 3)" "exit with code:1 (HUP)" "Emitted expected stdout with exit code"
-    assertContains "$(stdout 4)" "No corefile found at" "No core expected"
 
     exit_early
 
