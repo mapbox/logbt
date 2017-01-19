@@ -221,23 +221,13 @@ function main() {
     exit_early
 
     # test logbt with non-crashing program
-    # and unexpected cores on the system from something
-    # else that went wrong
-    # First re-run the segfaulting test
-    (ulimit -c unlimited && node test/children.js || true)
-    # Now a core should be left behind
-    # note: this will process and clean up the non-tracked cores
     run_test false
     assertEqual "${RESULT}" "1" "emitted expected signal"
     # check stdout
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
-    assertContains "$(stdout 3)" "WARNING: Found corefile (existing) at" "Emitted expected first line of stdout"
-    assertContains "$(stdout 4)" "exit with code:1 (HUP)" "Emitted expected stdout with exit code"
-    assertContains "$(stdout 5)" "No corefile found at" "Did not expected to find core by pid"
-    assertContains "$(stdout 6)" "Found corefile (non-tracked) at" "Expected to find core"
-    assertEqual "$(stdout 7)" "[logbt] Processing cores..." "Expected to find core"
-    assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
+    assertContains "$(stdout 3)" "exit with code:1 (HUP)" "Emitted expected stdout with exit code"
+    assertContains "$(stdout 4)" "No corefile found at" "No core expected"
 
     exit_early
 
@@ -312,7 +302,6 @@ function main() {
     assertContains "$(all_lines)" "illegal_instruction_error.cpp:2" "Found expected line number in backtrace output"
 
     exit_early
-
 
     # Floating point exception: 8
     echo "int main() { int zero = 0; float f2 = 1/zero; }" > ${WORKING_DIR}/floating-point-exception.cpp
