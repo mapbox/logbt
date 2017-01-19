@@ -186,6 +186,10 @@ function signal_handler() {
   local sig=${3}
   echo "[logbt] received signal:${code} (${sig})"
   echo "[logbt] sending SIGTERM to ${program} (${child_pid})"
+  # sleep here to help the stdout show in the right
+  # order (accounts for an intermittant case where the above lines print after
+  # the child outputs stdout during shutdown)
+  sleep 1
   kill -TERM ${child_pid}
   CHILD_EXIT=0
   wait ${child_pid} || CHILD_EXIT=$?
