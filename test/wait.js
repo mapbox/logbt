@@ -1,3 +1,4 @@
+var constants = require('constants');
 
 if (!process.argv[2]) {
     console.error('Please pass integer interval to wait for (in seconds)');
@@ -5,6 +6,18 @@ if (!process.argv[2]) {
 }
 
 console.log('Process id is',process.pid);
+
+Object.keys(constants).forEach(function(c) {
+    if (c.indexOf('SIG') == 0 &&
+        c !== 'SIGKILL' &&
+        c !== 'SIGSTOP') {
+        // attach handlers for all signals
+        process.on(c,function() {
+            console.log("node received",c);
+            process.exit(constants[c]+128);
+        })
+    }
+});
 
 var interval = process.argv[2]*100;
 

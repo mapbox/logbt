@@ -3,8 +3,6 @@
 set -u
 set -o pipefail
 
-# TODO: test SIGQUIT, SIGILL, SIGFPE, etc: http://man7.org/linux/man-pages/man7/signal.7.html
-
 export CODE=0
 export failures=0
 export passed=0
@@ -18,6 +16,10 @@ export SIGSEGV_CODE="139"
 export SIGABRT_CODE="134"
 export SIGFPE_CODE="136"
 export TIMEOUT_CODE="124"
+export SIGTERM_CODE="143"
+export SIGILL_CODE="132"
+export USR1_CODE="158"
+
 if [[ $(uname -s) == 'Darwin' ]]; then
     export SIGBUS_CODE="138"
 else
@@ -99,8 +101,8 @@ function run_test() {
 }
 
 function main() {
-    export EXPECTED_STARTUP_MESSAGE="Using corefile location: "
-    export EXPECTED_STARTUP_MESSAGE2="Using core_pattern: "
+    export EXPECTED_STARTUP_MESSAGE="[logbt] using corefile location: "
+    export EXPECTED_STARTUP_MESSAGE2="[logbt] using core_pattern: "
 
     mkdir -p ${WORKING_DIR}
 
@@ -129,8 +131,7 @@ function main() {
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
     assertEqual "$(stdout 3)" "stdout" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 4)" "node exited with code:0" "Emitted expected stdout with exit code"
-    assertEqual "$(stdout 5)" "" "No line 4 present"
+    assertEqual "$(stdout 4)" "" "No line 4 present"
     # check stderr
     assertEqual "$(stderr 1)" "stderr" "Emitted expected first line of stderr"
     assertEqual "$(stderr 2)" "" "No line 3 present"
@@ -155,8 +156,24 @@ function main() {
     assertEqual "$(stdout 10)" "Running tic # 5" "Emitted expected line of stdout"
     assertEqual "$(stdout 11)" "Running tic # 6" "Emitted expected line of stdout"
     assertEqual "$(stdout 12)" "Running tic # 7" "Emitted expected line of stdout"
-    assertContains "$(all_lines)" "node exited with code:0" "Emitted expected line of stdout"
+    assertContains "$(all_lines)" "[logbt] received signal:${SIGTERM_CODE} (TERM)" "Emitted expected line of stdout"
+    assertContains "$(all_lines)" "[logbt] sending SIGTERM to node" "Emitted expected line of stdout"
+    assertContains "$(all_lines)" "node received SIGTERM" "Emitted expected line of stdout"
 
+    exit_early
+
+    # test sending custom USR1 signal (158) to logbt
+    watcher_command="./bin/logbt --watch node test/wait.js 20"
+    # background logbt and grab its PID
+    ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
+    echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    sleep 1
+    kill -USR1 ${LOGBT_PID}
+    RESULT=0
+    wait ${LOGBT_PID} || export RESULT=$?
+    assertEqual "${RESULT}" "${USR1_CODE}" "emitted expected USR1 code"
+    assertContains "$(all_lines)" "logbt] received signal:158 (USR1)" "Found USR exit"
+    assertContains "$(all_lines)" "[logbt] sending SIGTERM to node" "Found SIGTERM send"
     exit_early
 
     # run node process that segfaults after 1000ms
@@ -166,7 +183,7 @@ function main() {
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
     assertEqual "$(stdout 3)" "running custom-node" "Emitted expected line of stdout"
-    assertEqual "$(stdout 4)" "test/segfault.js exited with code:${SIGSEGV_CODE}" "Emitted expected stdout with exit code"
+    assertEqual "$(stdout 4)" "logbt saw 'test/segfault.js' exit with code:${SIGSEGV_CODE} (SEGV)" "Emitted expected stdout with exit code"
     assertContains "$(stdout 5)" "Found corefile at" "Found corefile for given PID"
     assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
 
@@ -179,10 +196,10 @@ function main() {
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
     assertEqual "$(stdout 3)" "running custom-node" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 4)" "node exited with code:${SIGSEGV_CODE}" "Emitted expected stdout with exit code"
+    assertEqual "$(stdout 4)" "logbt saw 'node' exit with code:${SIGSEGV_CODE} (SEGV)" "Emitted expected stdout with exit code"
     assertContains "$(stdout 5)" "No corefile found at" "No core for direct child"
     assertContains "$(stdout 6)" "Found corefile (non-tracked) at" "Found corefile by directory search"
-    assertContains "$(stdout 7)" "Processing cores..." "Processing cores..."
+    assertContains "$(stdout 7)" "[logbt] Processing cores..." "Processing cores..."
     assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
 
     exit_early
@@ -194,10 +211,10 @@ function main() {
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
     assertEqual "$(stdout 3)" "running custom-script" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 4)" "./test/wrapper.sh exited with code:${SIGSEGV_CODE}" "Emitted expected stdout with exit code"
+    assertContains "$(stdout 4)" "exit with code:${SIGSEGV_CODE} (SEGV)" "Emitted expected stdout with exit code"
     assertContains "$(stdout 5)" "No corefile found at" "No core for direct child"
     assertContains "$(stdout 6)" "Found corefile (non-tracked) at" "Found corefile by directory search"
-    assertContains "$(stdout 7)" "Processing cores..." "Processing cores..."
+    assertContains "$(stdout 7)" "[logbt] Processing cores..." "Processing cores..."
     assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
 
     exit_early
@@ -208,24 +225,22 @@ function main() {
     # First re-run the segfaulting test
     (ulimit -c unlimited && node test/children.js || true)
     # Now a core should be left behind
-    run_test node -e "console.error('stderr');console.log('stdout')"
-    assertEqual "${RESULT}" "0" "emitted expected signal"
+    # note: this will process and clean up the non-tracked cores
+    run_test false
+    assertEqual "${RESULT}" "1" "emitted expected signal"
     # check stdout
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
     assertContains "$(stdout 3)" "WARNING: Found corefile (existing) at" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 4)" "stdout" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 5)" "node exited with code:0" "Emitted expected stdout with exit code"
+    assertContains "$(stdout 4)" "exit with code:1 (HUP)" "Emitted expected stdout with exit code"
+    assertContains "$(stdout 5)" "No corefile found at" "Did not expected to find core by pid"
     assertContains "$(stdout 6)" "Found corefile (non-tracked) at" "Expected to find core"
-    assertEqual "$(stdout 7)" "Skipping processing cores..." "Expected to skip core"
-    # check stderr
-    assertEqual "$(stderr 1)" "stderr" "Emitted expected first line of stderr"
-    assertEqual "$(stderr 2)" "" "No line 3 present"
+    assertEqual "$(stdout 7)" "[logbt] Processing cores..." "Expected to find core"
+    assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
 
     exit_early
 
     # abort
-    # note: this will process and clean up the non-tracked cores from the previous test
     echo "#include <cstdlib>" > ${WORKING_DIR}/abort.cpp
     echo "int main() { abort(); }" >> ${WORKING_DIR}/abort.cpp
 
@@ -237,9 +252,8 @@ function main() {
     assertEqual "${RESULT}" "${SIGABRT_CODE}" "emitted expected signal"
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
-    assertContains "$(stdout 3)" "WARNING: Found corefile (existing) at" "Found previous non-tracked corefile"
-    assertEqual "$(stdout 4)" "${WORKING_DIR}/run-test exited with code:${SIGABRT_CODE}" "Emitted expected line of stdout with error code"
-    assertContains "$(stdout 5)" "Found corefile at" "Found corefile for given PID"
+    assertContains "$(stdout 3)" "exit with code:${SIGABRT_CODE} (ABRT)" "Emitted expected line of stdout with error code"
+    assertContains "$(stdout 4)" "Found corefile at" "Found corefile for given PID"
     assertContains "$(all_lines)" "abort.cpp:2" "Found expected line number in backtrace output"
 
     exit_early
@@ -256,7 +270,7 @@ function main() {
     assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal from segfault"
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
-    assertEqual "$(stdout 3)" "${WORKING_DIR}/run-test exited with code:${SIGSEGV_CODE}" "Emitted expected line of stdout with error code"
+    assertContains "$(stdout 3)" "exit with code:${SIGSEGV_CODE} (SEGV)" "Emitted expected line of stdout with error code"
     assertContains "$(stdout 4)" "Found corefile at" "Found corefile for given PID"
     assertContains "$(all_lines)" "segfault.cpp:2" "Found expected line number in backtrace output"
 
@@ -274,11 +288,30 @@ function main() {
     assertEqual "${RESULT}" "${SIGBUS_CODE}" "emitted expected signal from bus error"
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
-    assertEqual "$(stdout 3)" "${WORKING_DIR}/run-test exited with code:${SIGBUS_CODE}" "Emitted expected line of stdout with error code"
+    assertContains "$(stdout 3)" "exit with code:${SIGBUS_CODE} (BUS)" "Emitted expected line of stdout with error code"
     assertContains "$(stdout 4)" "Found corefile at" "Found corefile for given PID"
     assertContains "$(all_lines)" "bus_error.cpp:2" "Found expected line number in backtrace output"
 
     exit_early
+
+    # ILL error
+    echo "#include <signal.h>" > ${WORKING_DIR}/illegal_instruction_error.cpp
+    echo "int main() { raise(SIGILL); }" >> ${WORKING_DIR}/illegal_instruction_error.cpp
+
+    ${CXX} ${CXXFLAGS} -o ${WORKING_DIR}/run-test ${WORKING_DIR}/illegal_instruction_error.cpp
+    assertEqual "$?" "0" "able to compile program illegal_instruction_error.cpp"
+
+    run_test ${WORKING_DIR}/run-test
+
+    assertEqual "${RESULT}" "${SIGILL_CODE}" "emitted expected signal from illegal instruction error"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+    assertContains "$(stdout 3)" "exit with code:${SIGILL_CODE} (ILL)" "Emitted expected line of stdout with error code"
+    assertContains "$(stdout 4)" "Found corefile at" "Found corefile for given PID"
+    assertContains "$(all_lines)" "illegal_instruction_error.cpp:2" "Found expected line number in backtrace output"
+
+    exit_early
+
 
     # Floating point exception: 8
     echo "int main() { int zero = 0; float f2 = 1/zero; }" > ${WORKING_DIR}/floating-point-exception.cpp
@@ -291,7 +324,7 @@ function main() {
     assertEqual "${RESULT}" "${SIGFPE_CODE}" "emitted expected signal"
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
-    assertEqual "$(stdout 3)" "${WORKING_DIR}/run-test exited with code:${SIGFPE_CODE}" "Emitted expected line of stdout with error code"
+    assertContains"$(stdout 3)" "exit with code:${SIGFPE_CODE} (FPE)" "Emitted expected line of stdout with error code"
     assertContains "$(stdout 4)" "Found corefile at" "Found corefile for given PID"
     assertContains "$(all_lines)" "floating-point-exception.cpp:1" "Found expected line number in backtrace output"
 
