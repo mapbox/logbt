@@ -171,7 +171,7 @@ function validate_core_pattern() {
 
 function trap_with_arg() {
   func="$1" ; shift
-  for sig in {TERM,INT,HUP,TRAP,PIPE,STOP,SEGV,USR1}; do
+  for sig in {TERM,INT,HUP,TRAP,PIPE,STOP,SEGV}; do
     trap "$func $@ $sig" $sig
   done
 }
@@ -247,7 +247,7 @@ function wait_for_child() {
   exit ${CHILD_RETURN}
 }
 
-function setup_and_exit() {
+function setup_logbt() {
   local settable_core_pattern=$(get_target_core_pattern)
   if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
     echo "[logbt] setting $(cat /proc/sys/kernel/core_pattern) -> ${settable_core_pattern}"
@@ -268,11 +268,9 @@ function setup_and_exit() {
 
   error_on_existing_cores ${core_directory}
 
-  exit 0
-
 }
 
-function test_and_exit() {
+function test_logbt() {
   ulimit -c unlimited
   # note: this will only create a corefile on osx with bash 4.x (not the apple 3.x)
   # create a program that crashes itself
@@ -302,9 +300,6 @@ function test_and_exit() {
   rm /tmp/logbt-stderr
   rm /tmp/logbt-stdout
   rm /tmp/crasher.sh
-
-  exit 0
-
 }
 
 function usage() {
@@ -332,7 +327,6 @@ function usage() {
 
 function get_version() {
   echo ${LOGBT_VERSION}
-  exit 0
 }
 
 if [[ ! ${1:-} ]]; then
@@ -350,20 +344,18 @@ case $i in
     launch_and_wait $@
     ;;
     --setup)
-    setup_and_exit
+    setup_logbt
     shift
     ;;
     --test)
-    test_and_exit
+    test_logbt
     shift
     ;;
     --current-pattern)
     get_core_pattern
-    exit 0
     ;;
     --target-pattern)
     get_target_core_pattern
-    exit 0
     ;;
     -v | --version)
     get_version
