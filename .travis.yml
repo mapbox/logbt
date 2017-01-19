@@ -42,6 +42,7 @@ services:
 
 matrix:
   include:
+    - os: linux
       env: DOCKER=writable-proc
       dist: trusty
       sudo: required
