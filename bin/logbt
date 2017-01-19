@@ -105,6 +105,19 @@ function find_remaining_cores() {
   done
 }
 
+function snapshot {
+  local program=${1}
+  local core_directory=${2}
+  local debugger=${3}
+  local child_pid=${4}
+  if [[ ${debugger} =~ "lldb" ]]; then
+    lldb -p ${child_pid} --batch -o "thread backtrace all" -o "quit"
+  else
+    gdb --pid ${child_pid} -ex "set pagination 0" -ex "thread apply all bt" --batch
+  fi
+  wait_for_child ${program} ${core_directory} ${debugger} ${child_pid}
+}
+
 function backtrace {
   local program=${1}
   local core_directory=${2}
@@ -232,6 +245,7 @@ function launch_and_wait() {
 
   # Hook up function to run when logbt received signal
   trap_with_arg signal_handler "${program} ${CHILD_PID}"
+  trap "snapshot ${program} ${core_directory} ${DEBUGGER} ${CHILD_PID}" USR1
 
   # Wait for child and attempt to generate a backtrace if child exits in non-zero way
   wait_for_child ${program} ${core_directory} ${DEBUGGER} ${CHILD_PID}

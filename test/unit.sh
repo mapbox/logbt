@@ -108,6 +108,34 @@ function main() {
 
     mkdir -p ${WORKING_DIR}
 
+    # test sending custom USR1 signal (158) to logbt
+    watcher_command="./bin/logbt --watch node test/wait.js 200"
+    # background logbt and grab its PID
+    ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
+    echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    # clean out logs
+    echo "" > ${STDOUT_LOGS}
+    sleep 1
+    # this should trigger a snapshot backtrace
+    kill -USR1 ${LOGBT_PID}
+    sleep 4
+    assertContains "$(all_lines)" "node::Start" "Found expected line number in backtrace output"
+    # clean out logs again
+    echo "" > ${STDOUT_LOGS}
+    sleep 2
+    kill -USR1 ${LOGBT_PID}
+    sleep 4
+    assertContains "$(all_lines)" "node::Start" "Found expected line number in backtrace output"
+    kill -TERM ${LOGBT_PID}
+    RESULT=0
+    wait ${LOGBT_PID} || RESULT=$?
+    assertEqual "${RESULT}" "143" "emitted expected signal"
+    assertContains "$(all_lines)" "[logbt] received signal:${SIGTERM_CODE} (TERM)" "Emitted expected line of stdout"
+    assertContains "$(all_lines)" "[logbt] sending SIGTERM to node" "Emitted expected line of stdout"
+    assertContains "$(all_lines)" "node received SIGTERM" "Emitted expected line of stdout"
+
+    exit_early
+
     # test logbt misusage
     export RESULT=0
     ./bin/logbt --watch >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
