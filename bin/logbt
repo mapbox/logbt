@@ -369,5 +369,7 @@ case $i in
     shift
     ;;
     *)
+    usage
+    ;;
 esac
 done
