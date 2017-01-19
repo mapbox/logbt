@@ -275,10 +275,10 @@ function test_and_exit() {
     cat /tmp/logbt-stderr
     error "Expected a corefile to be generated"
   fi
-  if [[ ! $(cat /tmp/logbt-stderr) =~ "core dumped" ]]; then
+  if [[ ! $(cat /tmp/logbt-stdout) =~ "kill_builtin" ]]; then
     cat /tmp/logbt-stdout
     cat /tmp/logbt-stderr
-    error "Expected stderr to contain 'core dumped'"
+    error "Expected stdout to contain 'kill_builtin'"
   fi
   echo "[logbt] success"
   # cleanup
