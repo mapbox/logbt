@@ -11,8 +11,8 @@ before_install_linux: &linux_setup
   # manually creating a bogus core pattern
   - sudo bash -c 'echo "dummy" > /proc/sys/kernel/core_pattern'
   # https://wiki.ubuntu.com/SecurityTeam/Roadmap/KernelHardening#ptrace
-  - cat /writable-proc/sys/kernel/yama/ptrace_scope
-  - sudo bash -c 'echo 0 > /writable-proc/sys/kernel/yama/ptrace_scope'
+  - cat /proc/sys/kernel/yama/ptrace_scope
+  - sudo bash -c 'echo 0 > /proc/sys/kernel/yama/ptrace_scope'
 
 before_install_osx: &osx_setup
   # To ensure that the --setup command is working we start off by
