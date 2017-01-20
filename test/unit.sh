@@ -87,20 +87,24 @@ function main() {
     mkdir -p ${WORKING_DIR}
 
     # test sending custom USR1 signal (158) to logbt
-    watcher_command="./bin/logbt --watch node test/wait.js 200"
+    watcher_command="./bin/logbt --watch node test/wait.js 30"
     # background logbt and grab its PID
     ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
     echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     # give logbt time to startup
-    sleep 4
+    WAIT_BEFORE_SIGNAL=2
+    sleep ${WAIT_BEFORE_SIGNAL}
     # this should trigger a snapshot backtrace
     kill -USR1 ${LOGBT_PID}
+    # wait 6 seconds for backtrace to get created
     sleep 6
-    kill -TERM ${LOGBT_PID}
+    # then terminate the process
     RESULT=0
+    kill -TERM ${LOGBT_PID}
+    # wait for process to respond to shutdown request
     wait ${LOGBT_PID} || RESULT=$?
-    assertContains "$(all_lines)" "node::Start" "Found node::Start in backtrace output (from USR1)"
     assertEqual "${RESULT}" "143" "emitted expected signal"
+    assertContains "$(all_lines)" "node::Start" "Found node::Start in backtrace output (from USR1)"
     assertContains "$(all_lines)" "[logbt] received signal:${SIGTERM_CODE} (TERM)" "Emitted expected line of stdout"
     assertContains "$(all_lines)" "[logbt] sending SIGTERM to node" "Emitted expected line of stdout"
     assertContains "$(all_lines)" "node received SIGTERM" "Emitted expected line of stdout"
@@ -141,7 +145,7 @@ function main() {
 
     # run node process that waits to exit for set time
     # And ensure timeout is shorter and everything closes down correctly
-    TIME_WAITING="40"
+    TIME_WAITING="10"
     timeout_cmd="timeout 4 ./bin/logbt --watch node test/wait.js ${TIME_WAITING}"
     ${timeout_cmd} >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
     echo -e "\033[1m\033[32mok\033[0m - ran ${timeout_cmd} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
@@ -165,11 +169,11 @@ function main() {
     exit_early
 
     # test sending HUP signal to logbt
-    watcher_command="./bin/logbt --watch node test/wait.js 20"
+    watcher_command="./bin/logbt --watch node test/wait.js 10"
     # background logbt and grab its PID
     ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
     echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
-    sleep 1
+    sleep ${WAIT_BEFORE_SIGNAL}
     kill -HUP ${LOGBT_PID}
     RESULT=0
     wait ${LOGBT_PID} || export RESULT=$?
@@ -179,11 +183,11 @@ function main() {
     exit_early
 
     # test sending TERM signal to logbt
-    watcher_command="./bin/logbt --watch node test/wait.js 20"
+    watcher_command="./bin/logbt --watch node test/wait.js 10"
     # background logbt and grab its PID
     ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
     echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
-    sleep 1
+    sleep ${WAIT_BEFORE_SIGNAL}
     kill -TERM ${LOGBT_PID}
     RESULT=0
     wait ${LOGBT_PID} || export RESULT=$?

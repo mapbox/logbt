@@ -19,7 +19,7 @@ Object.keys(constants).forEach(function(c) {
     }
 });
 
-var interval = process.argv[2]*100;
+var interval = process.argv[2]*1000;
 
 console.log('Running for',process.argv[2],'s');
 
