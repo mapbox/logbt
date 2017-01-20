@@ -5,6 +5,8 @@ before_install_linux: &linux_setup
   - ./mason/mason install gdb 7.12
   - sudo ln -s $(./mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
   - which gdb
+  # attempt to workaroung "ptrace: Operation not permitted"
+  - sudo chmod +s $(which gdb)
   # To ensure that the --setup command is working we start off by
   # manually creating a bogus core pattern
   - sudo bash -c 'echo "dummy" > /proc/sys/kernel/core_pattern'
