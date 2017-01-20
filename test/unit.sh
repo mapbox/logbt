@@ -3,9 +3,9 @@
 set -u
 set -o pipefail
 
+source $(dirname "${BASH_SOURCE[0]}")/utils.sh
+
 export CODE=0
-export failures=0
-export passed=0
 export RESULT=0
 export WORKING_DIR="/tmp/logbt-unit-test-outputs"
 export STDOUT_LOGS="./stdout.txt"
@@ -36,28 +36,6 @@ function teardown() {
 }
 
 trap "teardown" EXIT
-
-function assertEqual() {
-    if [[ "$1" == "$2" ]]; then
-        echo -e "\033[1m\033[32mok\033[0m - $1 == $2 ($3)"
-        export passed=$((passed+1))
-    else
-        echo -e "\033[1m\033[31mnot ok\033[0m - $1 != $2 ($3)"
-        export CODE=1
-        export failures=$((failures+1))
-    fi
-}
-
-function assertContains() {
-    if [[ "$1" =~ "$2" ]]; then
-        echo -e "\033[1m\033[32mok\033[0m - Found string $2 in output ($3)"
-        export passed=$((passed+1))
-    else
-        echo -e "\033[1m\033[31mnot ok\033[0m - Did not find string '$2' in '$1' ($3)"
-        export CODE=1
-        export failures=$((failures+1))
-    fi
-}
 
 function exit_tests() {
     if [[ ${CODE} == 0 ]]; then

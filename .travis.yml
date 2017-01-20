@@ -45,6 +45,12 @@ services:
 matrix:
   include:
     - os: linux
+      env: DOCKER=PID1-signal
+      dist: trusty
+      sudo: required
+      script:
+        - ./test/docker-snapshotting.sh
+    - os: linux
       env: DOCKER=writable-proc
       dist: trusty
       sudo: required
