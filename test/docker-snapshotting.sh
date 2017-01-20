@@ -10,7 +10,7 @@ if [[ "$(docker images -q logbt-signals 2> /dev/null)" == "" ]]; then
 fi
 
 echo "starting detached container"
-docker run --detach --privileged -it --rm --name="logbt-signals" logbt-signals
+docker run --detach --privileged -it --name="logbt-signals" logbt-signals
 
 #trap "docker rm logbt-signals" EXIT
 
