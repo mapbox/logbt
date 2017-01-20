@@ -91,6 +91,8 @@ function main() {
     # background logbt and grab its PID
     ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
     echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    # give logbt time to startup
+    sleep 4
     # this should trigger a snapshot backtrace
     kill -USR1 ${LOGBT_PID}
     sleep 6
@@ -139,14 +141,15 @@ function main() {
 
     # run node process that waits to exit for set time
     # And ensure timeout is shorter and everything closes down correctly
-    timeout_cmd="timeout 2 ./bin/logbt --watch node test/wait.js 20"
+    TIME_WAITING="40"
+    timeout_cmd="timeout 4 ./bin/logbt --watch node test/wait.js ${TIME_WAITING}"
     ${timeout_cmd} >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
     echo -e "\033[1m\033[32mok\033[0m - ran ${timeout_cmd} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     assertEqual "${RESULT}" "${TIMEOUT_CODE}" "emitted expected timeout code"
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
     assertContains "$(stdout 3)" "Process id is" "Emitted expected line of stdout"
-    assertEqual "$(stdout 4)" "Running for 20 s" "Emitted expected line of stdout"
+    assertEqual "$(stdout 4)" "Running for ${TIME_WAITING} s" "Emitted expected line of stdout"
     assertEqual "$(stdout 5)" "Running tic # 0" "Emitted expected line of stdout"
     assertEqual "$(stdout 6)" "Running tic # 1" "Emitted expected line of stdout"
     assertEqual "$(stdout 7)" "Running tic # 2" "Emitted expected line of stdout"
