@@ -10,6 +10,9 @@ before_install_linux: &linux_setup
   # To ensure that the --setup command is working we start off by
   # manually creating a bogus core pattern
   - sudo bash -c 'echo "dummy" > /proc/sys/kernel/core_pattern'
+  # https://wiki.ubuntu.com/SecurityTeam/Roadmap/KernelHardening#ptrace
+  - cat /writable-proc/sys/kernel/yama/ptrace_scope
+  - sudo bash -c 'echo 0 > /writable-proc/sys/kernel/yama/ptrace_scope'
 
 before_install_osx: &osx_setup
   # To ensure that the --setup command is working we start off by
@@ -57,25 +60,25 @@ matrix:
       dist: trusty
       sudo: required
       script:
-        - docker build -t logbt-precise -f Dockerfile.ubuntu-precise-writable-proc .
-        - docker run --cap-add SYS_PTRACE --volume /proc:/writable-proc logbt-precise
+        - docker build -t logbt-precise1 -f Dockerfile.ubuntu-precise-writable-proc .
+        - docker run --cap-add SYS_PTRACE --volume /proc:/writable-proc logbt-precise1
         - cat /proc/sys/kernel/core_pattern
     - os: linux
       env: DOCKER=readonly
       dist: trusty
       sudo: required
       script:
-        - docker build -t logbt-precise -f Dockerfile.ubuntu-precise-readonly .
+        - docker build -t logbt-precise2 -f Dockerfile.ubuntu-precise-readonly .
         - sudo ./bin/logbt --setup
-        - docker run --cap-add SYS_PTRACE logbt-precise
+        - docker run --cap-add SYS_PTRACE logbt-precise2
         - cat /proc/sys/kernel/core_pattern
     - os: linux
       env: DOCKER=privileged
       dist: trusty
       sudo: required
       script:
-        - docker build -t logbt-precise -f Dockerfile.ubuntu-precise .
-        - docker run --privileged logbt-precise
+        - docker build -t logbt-precise3 -f Dockerfile.ubuntu-precise .
+        - docker run --privileged logbt-precise3
         - cat /proc/sys/kernel/core_pattern
     - os: linux
       dist: precise

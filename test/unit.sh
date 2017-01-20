@@ -87,17 +87,16 @@ function main() {
     mkdir -p ${WORKING_DIR}
 
     # test sending custom USR1 signal (158) to logbt
-    watcher_command="./bin/logbt --watch node test/wait.js 30"
     # background logbt and grab its PID
-    ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
-    echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    ./bin/logbt --watch node test/wait.js 30 >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
+    echo -e "\033[1m\033[32mok\033[0m - ran ./bin/logbt --watch node test/wait.js 30 >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     # give logbt time to startup
-    WAIT_BEFORE_SIGNAL=2
+    WAIT_BEFORE_SIGNAL=1
     sleep ${WAIT_BEFORE_SIGNAL}
     # this should trigger a snapshot backtrace
     kill -USR1 ${LOGBT_PID}
     # wait 6 seconds for backtrace to get created
-    sleep 6
+    sleep 2
     # then terminate the process
     RESULT=0
     kill -TERM ${LOGBT_PID}
