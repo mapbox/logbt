@@ -107,15 +107,14 @@ function find_remaining_cores() {
 
 function snapshot {
   local program=${1}
-  local core_directory=${2}
-  local debugger=${3}
-  local child_pid=${4}
+  local debugger=${2}
+  local child_pid=${3}
+  echo "[logbt] snapshotting ${program} (${child_pid})"
   if [[ ${debugger} =~ "lldb" ]]; then
     lldb -p ${child_pid} --batch -o "thread backtrace all" -o "quit"
   else
     gdb --pid ${child_pid} -ex "set pagination 0" -ex "thread apply all bt" --batch
   fi
-  wait_for_child ${program} ${core_directory} ${debugger} ${child_pid}
 }
 
 function backtrace {
@@ -197,6 +196,9 @@ function signal_handler() {
   local program=${1}
   local child_pid=${2}
   local sig=${3}
+  # Bug note: On darwin ${code} will be incorrectly 0 after snapshot here
+  # so we ignore ${code} and instead get it from the signal
+  code=$(($(kill -l ${sig})+128))
   echo "[logbt] received signal:${code} (${sig})"
   echo "[logbt] sending SIGTERM to ${program} (${child_pid})"
   # sleep here to help the stdout show in the right
@@ -244,8 +246,8 @@ function launch_and_wait() {
   $* & CHILD_PID=$!
 
   # Hook up function to run when logbt received signal
-  trap_with_arg signal_handler "${program} ${CHILD_PID}"
-  trap "snapshot ${program} ${core_directory} ${DEBUGGER} ${CHILD_PID}" USR1
+  trap "snapshot ${program} ${DEBUGGER} ${CHILD_PID}" USR1
+  trap_with_arg "signal_handler ${program} ${CHILD_PID}"
 
   # Wait for child and attempt to generate a backtrace if child exits in non-zero way
   wait_for_child ${program} ${core_directory} ${DEBUGGER} ${CHILD_PID}
@@ -258,6 +260,12 @@ function wait_for_child() {
   local child_pid=${4}
   CHILD_RETURN=0
   wait ${child_pid} || CHILD_RETURN=$?
+  # Bug note: on linux USR1 will trigger an exit which makes it looks like the child
+  # has returned when it has not. So the below code ensures we stay alive and watching
+  # the child if USR1 is hit
+  if [[ $(uname -s) == 'Linux' ]] && [[ $(kill -l ${CHILD_RETURN}) == USR1 ]]; then
+    wait_for_child ${program} ${core_directory} ${debugger} ${child_pid}
+  fi
   local exit_msg="saw '${program}' exit with code:${CHILD_RETURN}"
   if [[ ${CHILD_RETURN} != 0 ]]; then
     exit_msg="${exit_msg} ($(kill -l ${CHILD_RETURN}))"
