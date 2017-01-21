@@ -1,111 +1,116 @@
-before_install_default: &install_gdb
+language: generic
+
+before_install_linux: &linux_setup
   - mkdir mason && curl -sSfL https://github.com/mapbox/mason/archive/v0.2.0.tar.gz | tar --gunzip --extract --strip-components=1 --directory=./mason
   - ./mason/mason install gdb 7.12
   - sudo ln -s $(./mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
   - which gdb
+  # attempt to workaroung "ptrace: Operation not permitted"
+  - sudo chmod +s $(which gdb)
+  # To ensure that the --setup command is working we start off by
+  # manually creating a bogus core pattern
+  - sudo bash -c 'echo "dummy" > /proc/sys/kernel/core_pattern'
+  # https://wiki.ubuntu.com/SecurityTeam/Roadmap/KernelHardening#ptrace
+  - cat /proc/sys/kernel/yama/ptrace_scope
+  - sudo bash -c 'echo 0 > /proc/sys/kernel/yama/ptrace_scope'
 
-install_default: &install_node
-  # install node in a way that ensures node will be on PATH for sudo and sudoless usage
+before_install_osx: &osx_setup
+  # To ensure that the --setup command is working we start off by
+  # manually creating a bogus core pattern
+  - sudo sysctl kern.corefile=dummy
+  - brew install coreutils bash || true
+  - export PATH=$(brew --prefix)/opt/coreutils/libexec/gnubin:${PATH}
+  - which lldb
+  - lldb --version
+
+install_default: &run_install
+  # disable node that may be already enabled via nvm
+  - nvm unload || true
+  # clear out brew installed node otherwise install-node may fail trying to overwrite it
+  - if [[ $(uname -s) == 'Darwin' ]]; then brew rm node || true; fi;
   # install-node is a good solution given https://github.com/travis-ci/travis-ci/issues/1350
   # which causes `source nvm.sh && sudo node ...` to fail
-  - curl https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o run
+  - curl -sSfL https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o run
   - chmod +x ./run
-  # clear out brew installed node otherwise its broken symlinks prevent our node
-  # from being installed
-  - if [[ $(uname -s) == 'Darwin' ]]; then brew rm node || true; fi;
-  - sudo NV=4.4.2 NP=$(uname | tr A-Z a-z)-x64 OD=/usr/local ./run
-  - bash --version
-  # clear out default-installed node versions on linux to ensure out version is used
-  - rm -rf ~/.nvm/
+  - sudo NV=4.4.3 NP=$(uname | tr A-Z a-z)-x64 OD=/usr/local ./run
+  - export PATH=/usr/local/bin:${PATH}
+  - /usr/local/bin/node --version
   - which node
   - node --version
+  - npm --version
 
-script_linux: &linux
- # first test sudoless
- - sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p.%E" > /proc/sys/kernel/core_pattern'
- - echo "running test sudoless"
+script_default: &run_script
+ - sudo ./bin/logbt --setup
+ - ./bin/logbt --test
  - ./test/unit.sh
- # now set the kernfile to something wrong to ensure that
- # the next run as sudo will fix and work
- - echo ""
- - echo "running tests again as sudo"
- - sudo bash -c 'echo "dummy" > /proc/sys/kernel/core_pattern'
- # now run tests as sudo
- - sudo ./test/unit.sh
 
-script_osx: &osx
-  # first test sudoless
- - echo "running test sudoless"
- - ./test/unit.sh
- # now set the kernfile to something wrong to ensure that
- # the next run as sudo will fix and work
- - echo ""
- - echo "running tests again as sudo"
- - sudo sysctl kern.corefile=dummy
- # now run tests as sudo
- - sudo ./test/unit.sh
+services:
+  - docker
 
 matrix:
   include:
     - os: linux
-      language: generic
+      env: DOCKER=PID1-signal
+      dist: trusty
       sudo: required
+      script:
+        - ./test/docker-snapshotting.sh
+    - os: linux
+      env: DOCKER=writable-proc
+      dist: trusty
+      sudo: required
+      script:
+        - docker build -t logbt-precise1 -f Dockerfile.ubuntu-precise-writable-proc .
+        - docker run --cap-add SYS_PTRACE --volume /proc:/writable-proc logbt-precise1
+        - cat /proc/sys/kernel/core_pattern
+    - os: linux
+      env: DOCKER=readonly
+      dist: trusty
+      sudo: required
+      script:
+        - docker build -t logbt-precise2 -f Dockerfile.ubuntu-precise-readonly .
+        - sudo ./bin/logbt --setup
+        - docker run --cap-add SYS_PTRACE logbt-precise2
+        - cat /proc/sys/kernel/core_pattern
+    - os: linux
+      env: DOCKER=privileged
+      dist: trusty
+      sudo: required
+      script:
+        - docker build -t logbt-precise3 -f Dockerfile.ubuntu-precise .
+        - docker run --privileged logbt-precise3
+        - cat /proc/sys/kernel/core_pattern
+    - os: linux
       dist: precise
+      sudo: required
       env: CXX=clang++
-      before_install: *install_gdb
-      install: *install_node
+      before_install: *linux_setup
+      install: *run_install
       before_script:
         - ./mason/mason install clang++ 3.8.1
         - sudo ln -s $(./mason/mason prefix clang++ 3.8.1)/bin/clang++ /usr/local/bin/clang++
         - which clang++
-      script: *linux
+      script: *run_script
     - os: linux
-      language: generic
-      sudo: required
       dist: trusty
-      env: CXX=g++-5
-      before_install: *install_gdb
-      install: *install_node
-      script: *linux
-      addons:
-        apt:
-          sources: [ 'ubuntu-toolchain-r-test']
-          packages: [ 'g++-5']
-    - os: linux
-      language: generic
       sudo: required
-      dist: trusty
       env: CXX=g++-6
-      before_install: *install_gdb
-      install: *install_node
-      script: *linux
       addons:
         apt:
           sources: [ 'ubuntu-toolchain-r-test']
           packages: [ 'g++-6']
+      before_install: *linux_setup
+      install: *run_install
+      script: *run_script
     - os: linux
-      language: node_js
-      node_js:
-        - '4'
-      sudo: true
       dist: precise
+      sudo: required
       env: CXX=g++
-      before_install: *install_gdb
-      install:
-        - nvm unload || true
-        - rm -rf ~/.nvm/ && git clone --depth 1 https://github.com/creationix/nvm.git ~/.nvm/
-        - source ~/.nvm/nvm.sh
-        - nvm install 4
-        - nvm use 4
-        - node --version
-        - npm --version
-        - which node
-      script:
-        # only sudoless with nvm
-        - sudo bash -c 'echo "/tmp/logbt-coredumps/core.%p.%E" > /proc/sys/kernel/core_pattern'
-        - echo "running test sudoless"
-        - ./test/unit.sh
+      before_install: *linux_setup
+      install: *run_install
+      script: *run_script
     - os: osx
-      language: generic
-      install: *install_node
-      script: *osx
+      osx_image: xcode8.2
+      before_install: *osx_setup
+      install: *run_install
+      script: *run_script

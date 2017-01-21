@@ -4,167 +4,399 @@ set -eu
 set -o pipefail
 shopt -s nullglob
 
+PLATFORM_UNAME=$(uname -s)
+REQUIRED_FILENAME="core"
+LOGBT_VERSION="v2.0.0"
+BASE_CORE_DIRECTORY=/tmp/logbt-coredumps
+# signals with possible coredumps that we'd like backtraces for
+# http://man7.org/linux/man-pages/man7/signal.7.html
+BACKTRACE_SIGNALS=("QUIT" "ILL" "ABRT" "FPE" "SEGV" "BUS" "SYS" "TRAP" "XCPU" "XFSZ")
+
+if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
+  REQUIRED_PATTERN="${REQUIRED_FILENAME}.%p.%E"
+  DEBUGGER="gdb"
+elif [[ ${PLATFORM_UNAME} == "Darwin" ]]; then
+  # Recommend running with the following setting to only show crashes
+  # in the notification center
+  # defaults write com.apple.CrashReporter UseUNC 1
+  REQUIRED_PATTERN="${REQUIRED_FILENAME}.%P"
+  DEBUGGER="lldb"
+else
+  error "Unsupported platform: ${PLATFORM_UNAME}"
+fi
+
 function error() {
   >&2 echo "$@"
   exit 1
 }
 
+# http://stackoverflow.com/a/8574392
+function contains() {
+  local e
+  for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
+  return 1
+}
+
+function is_crashing_signal() {
+  return $(contains $(kill -l ${1}) "${BACKTRACE_SIGNALS[@]}")
+}
+
 function process_core() {
   local program=${1}
   local corefile=${2}
-  if [[ $(uname -s) == 'Darwin' ]]; then
-    lldb --core ${corefile} --batch -o 'thread backtrace all' -o 'quit'
+  local debugger=${3}
+  if [[ ${debugger} =~ "lldb" ]]; then
+    lldb --core ${corefile} --batch -o "thread backtrace all" -o "quit"
   else
     gdb ${program} --core ${corefile} -ex "set pagination 0" -ex "thread apply all bt" --batch
   fi
-  # note: on OS X the -f avoids a hang on prompt 'remove write-protected regular file?'
+  # note: on OS X the -f avoids a hang on prompt "remove write-protected regular file?"
   rm -f ${corefile}
 }
 
-function backtrace {
-  local code=$?
+function find_core_by_pid() {
   local program=${1}
   local core_directory=${2}
-  echo "${program} exited with code:${code}"
-  if [[ $(uname -s) == 'Darwin' ]]; then
-    local single_corefile="${core_directory}/core.${CHILD_PID}"
+  local debugger=${3}
+  local child_pid=${4}
+  if [[ ${PLATFORM_UNAME} == "Darwin" ]]; then
+    local single_corefile="${core_directory}/${REQUIRED_FILENAME}.${child_pid}"
     if [ -e ${single_corefile} ]; then
-      echo "Found corefile at ${single_corefile}"
-      process_core ${program} ${single_corefile}
+      echo "[logbt] Found corefile at ${single_corefile}"
+      process_core ${program} ${single_corefile} ${debugger}
     else
-      if [[ ${code} != 0 ]]; then
-          echo "No corefile found at ${single_corefile}"
-      fi
+      echo "[logbt] No corefile found at ${single_corefile}"
     fi
   else
-    local SEARCH_PATTERN_BY_PID="core.${CHILD_PID}.*"
+    local SEARCH_PATTERN_BY_PID="${REQUIRED_FILENAME}.${child_pid}.*"
     local hit=false
     for corefile in ${core_directory}/${SEARCH_PATTERN_BY_PID}; do
-      echo "Found corefile at ${corefile}"
+      echo "[logbt] Found corefile at ${corefile}"
       # extract program name from corefile
       filename=$(basename "${corefile}")
-      binary_program=/$(echo ${filename##*.\!} | tr '!' '/')
-      process_core ${binary_program} ${corefile}
+      binary_program=/$(echo ${filename##*.\!} | tr "!" "/")
+      process_core ${binary_program} ${corefile} ${debugger}
       hit=true
     done
-    if [[ ${hit} == false ]] && [[ ${code} != 0 ]]; then
-        echo "No corefile found at ${core_directory}/${SEARCH_PATTERN_BY_PID}"
+    if [[ ${hit} == false ]]; then
+        echo "[logbt] No corefile found at ${core_directory}/${SEARCH_PATTERN_BY_PID}"
     fi
-  fi
-  local SEARCH_PATTERN_NON_TRACKED="core.*"
+  fi  
+}
+
+function find_remaining_cores() {
+  local program=${1}
+  local core_directory=${2}
+  local debugger=${3}
+  local SEARCH_PATTERN_NON_TRACKED="${REQUIRED_FILENAME}.*"
   local hit=false
   for corefile in ${core_directory}/${SEARCH_PATTERN_NON_TRACKED}; do
-    echo "Found corefile (non-tracked) at ${corefile}"
+    echo "[logbt] Found corefile (non-tracked) at ${corefile}"
     hit=true
   done
-  if [[ ${code} != 0 ]]; then
-    if [[ ${hit} == true ]]; then
-      echo "Processing cores..."
-    fi
-    for corefile in ${core_directory}/${SEARCH_PATTERN_NON_TRACKED}; do
-      filename=$(basename "${corefile}")
-      binary_program=/$(echo ${filename##*.\!} | tr '!' '/')
-      process_core ${binary_program} ${corefile}
-    done
-  else
-    if [[ ${hit} == true ]]; then
-      echo "Skipping processing cores..."
-    fi
+  if [[ ${hit} == true ]]; then
+    echo "[logbt] Processing cores..."
   fi
-  exit $code
+  for corefile in ${core_directory}/${SEARCH_PATTERN_NON_TRACKED}; do
+    # below two lines are linux specific, but harmless to run on osx
+    filename=$(basename "${corefile}")
+    binary_program=/$(echo ${filename##*.\!} | tr "!" "/")
+    process_core ${binary_program} ${corefile} ${debugger}
+  done
+}
+
+function snapshot {
+  local program=${1}
+  local debugger=${2}
+  local child_pid=${3}
+  echo "[logbt] snapshotting ${program} (${child_pid})"
+  if [[ ${debugger} =~ "lldb" ]]; then
+    lldb -p ${child_pid} --batch -o "thread backtrace all" -o "quit"
+  else
+    gdb --pid ${child_pid} -ex "set pagination 0" -ex "thread apply all bt" --batch
+  fi
+}
+
+function backtrace {
+  local program=${1}
+  local core_directory=${2}
+  local debugger=${3}
+  local child_pid=${4}
+  local child_return=${5}
+  if is_crashing_signal ${child_return}; then
+    find_core_by_pid ${program} ${core_directory} ${debugger} ${child_pid}
+    find_remaining_cores ${program} ${core_directory} ${debugger}
+  fi
 }
 
 function warn_on_existing_cores() {
   local core_directory=${1}
-  local SEARCH_PATTERN_NON_TRACKED="core.*"
-  # at startup warn about existing corefiles, since these are unexpected
+  local SEARCH_PATTERN_NON_TRACKED="${REQUIRED_FILENAME}.*"
   for corefile in ${core_directory}/${SEARCH_PATTERN_NON_TRACKED}; do
-    echo "WARNING: Found corefile (existing) at ${corefile}"
+    echo "[logbt] WARNING: Found corefile (existing) at ${corefile}"
   done
 }
 
-function launch_and_wait() {
-  local core_directory=/tmp/logbt-coredumps
-  if [[ $(uname -s) == 'Linux' ]]; then
-    if ! which gdb > /dev/null; then
-      error "Could not find required command 'gdb'"
-    fi
+function error_on_existing_cores() {
+  local core_directory=${1}
+  local SEARCH_PATTERN_NON_TRACKED="${REQUIRED_FILENAME}.*"
+  for corefile in ${core_directory}/${SEARCH_PATTERN_NON_TRACKED}; do
+    error "Error: Found corefile (unexpected) at ${corefile}"
+  done  
+}
 
-    # if we have sudo then set core pattern
-    if [[ $(id -u) == 0 ]]; then
-      echo "Setting $(cat /proc/sys/kernel/core_pattern) -> ${core_directory}/core.%p.%E"
-      echo "${core_directory}/core.%p.%E" > /proc/sys/kernel/core_pattern
-    else
-      # if we cannot modify the pattern we assert it has
-      # already been set as we expect and need
-      if [[ $(cat /proc/sys/kernel/core_pattern) != '/tmp/logbt-coredumps/core.%p.%E' ]]; then
-        error "unexpected core_pattern: $(cat /proc/sys/kernel/core_pattern)"
-        exit 1
-      fi
-      echo "Using existing corefile location: $(cat /proc/sys/kernel/core_pattern)"
-    fi
-  else
-    if ! which lldb > /dev/null; then
-      error "Could not find required command 'lldb'"
-      exit 1
-    fi
-
-    # if we have sudo then set core pattern
-    if [[ $(id -u) == 0 ]]; then
-      sudo sysctl kern.corefile=${core_directory}/core.%P
-    else
-      if [[ $(sysctl -n kern.corefile) == '/cores/core.%P' ]]; then
-        # OS X default is /cores/core.%P which works for logbt out of the box
-        core_directory=/cores
-      elif [[ $(sysctl -n kern.corefile) == '${core_directory}/core.%P' ]]; then
-        # all good, previously set
-        :
-      else
-        # restore default with:
-        # sudo sysctl kern.corefile=/cores/core.%P
-        error "unexpected core_pattern: $(sysctl -n kern.corefile)"
-        exit 1
-      fi
-      echo "Using existing corefile location: $(sysctl -n kern.corefile)"
-    fi
-
-    # Recommend running with the following setting to only show crashes
-    # in the notification center
-    # defaults write com.apple.CrashReporter UseUNC 1
-  fi
-
-  if [[ ! -d ${core_directory} ]]; then
-    # TODO: enable this once tests are adapted to extra stdout
-    # echo "Creating directory for core files at '${core_directory}'"
-    mkdir -p ${core_directory}
-  fi
-
+function ensure_directory_is_writeable() {
   # ensure we can write to the directory, otherwise
   # core files might not be able to be written
   WRITE_RETURN=0
   touch ${core_directory}/test.txt || WRITE_RETURN=$?
   if [[ ${WRITE_RETURN} != 0 ]]; then
     error "Permissions problem: unable to write to ${core_directory} (exited with ${WRITE_RETURN})"
-    exit 1
   else
     # cleanup from test
     rm ${core_directory}/test.txt
-  fi
-  warn_on_existing_cores ${core_directory}
+  fi  
+}
 
-  # Hook up function to run when logbt exits
-  trap "backtrace $1 ${core_directory}" EXIT
+function get_target_core_pattern() {
+  echo ${BASE_CORE_DIRECTORY}/${REQUIRED_PATTERN}
+}
+
+function get_core_pattern() {
+  if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
+    local core_pattern=$(cat /proc/sys/kernel/core_pattern)
+  elif [[ ${PLATFORM_UNAME} == "Darwin" ]]; then
+    # Recommend running with the following setting to only show crashes
+    # in the notification center
+    # defaults write com.apple.CrashReporter UseUNC 1
+    local core_pattern=$(sysctl -n kern.corefile)
+  fi
+  echo ${core_pattern}
+}
+
+function validate_core_pattern() {
+  local core_pattern=${1}
+  if [[ ! ${core_pattern} =~ ${REQUIRED_PATTERN} ]]; then
+    error "unexpected core_pattern: ${core_pattern}"
+  fi  
+}
+
+function trap_with_arg() {
+  func="$1" ; shift
+  # note: SIGINT only works when logbt is a "foreground" process
+  # such that ctrl-c will send SIGINT but `kill -INT <pid>` will not
+  # http://stackoverflow.com/a/14697034
+  for sig in {TERM,INT,HUP}; do
+    trap "$func $@ $sig" $sig
+  done
+}
+
+function signal_handler() {
+  local code=$?
+  local program=${1}
+  local child_pid=${2}
+  local sig=${3}
+  # Bug note: On darwin ${code} will be incorrectly 0 after snapshot here
+  # so we ignore ${code} and instead get it from the signal
+  code=$(($(kill -l ${sig})+128))
+  echo "[logbt] received signal:${code} (${sig})"
+  echo "[logbt] sending SIGTERM to ${program} (${child_pid})"
+  # sleep here to help the stdout show in the right
+  # order (accounts for an intermittant case where the above lines print after
+  # the child outputs stdout during shutdown)
+  sleep 1
+  kill -TERM ${child_pid}
+  CHILD_EXIT=0
+  wait ${child_pid} || CHILD_EXIT=$?
+  if [[ ${CHILD_EXIT} != 143 ]]; then
+    error "Child process exited abnormally: ${CHILD_EXIT}"
+  fi
+  exit ${code}
+}
+
+function launch_and_wait() {
+
+  local program=${1}
+  local core_pattern=$(get_core_pattern)
+  validate_core_pattern ${core_pattern}
+
+  local core_directory=$(dirname ${core_pattern})
+  echo "[logbt] using corefile location: ${core_directory}"
+  echo "[logbt] using core_pattern: $(basename ${core_pattern})"
+
+  # ensure we have a debugger installed
+  if ! which ${DEBUGGER} > /dev/null; then
+    error "Could not find required command '${DEBUGGER}'"
+  fi
+
+  if [[ ! -d ${core_directory} ]]; then
+    echo "[logbt] creating directory for core files at '${core_directory}'"
+    mkdir -p -m a+w ${core_directory}
+  fi
+
+  ensure_directory_is_writeable ${core_directory}
+
+  warn_on_existing_cores ${core_directory}
 
   # Enable corefile generation
   ulimit -c unlimited
 
   # Run the child process in a background process
   # in order to get the PID
-  $* & export CHILD_PID=$!
+  $* & CHILD_PID=$!
 
-  # Keep logbt running as long as the child is running
-  # to be able to hook into a potential crash
-  wait ${CHILD_PID}  
+  # Hook up function to run when logbt received signal
+  trap "snapshot ${program} ${DEBUGGER} ${CHILD_PID}" USR1
+  trap_with_arg "signal_handler ${program} ${CHILD_PID}"
+
+  # Wait for child and attempt to generate a backtrace if child exits in non-zero way
+  wait_for_child ${program} ${core_directory} ${DEBUGGER} ${CHILD_PID}
 }
 
-launch_and_wait $@
+function wait_for_child() {
+  local program=${1}
+  local core_directory=${2}
+  local debugger=${3}
+  local child_pid=${4}
+  CHILD_RETURN=0
+  wait ${child_pid} || CHILD_RETURN=$?
+  # Bug note: on linux USR1 will trigger an exit which makes it looks like the child
+  # has returned when it has not. So the below code ensures we stay alive and watching
+  # the child if USR1 is hit
+  if [[ $(uname -s) == 'Linux' ]] && [[ $(kill -l ${CHILD_RETURN}) == USR1 ]]; then
+    wait_for_child ${program} ${core_directory} ${debugger} ${child_pid}
+  fi
+  local exit_msg="saw '${program}' exit with code:${CHILD_RETURN}"
+  if [[ ${CHILD_RETURN} != 0 ]]; then
+    exit_msg="${exit_msg} ($(kill -l ${CHILD_RETURN}))"
+    echo "[logbt] ${exit_msg}"
+    backtrace ${program} ${core_directory} ${DEBUGGER} ${child_pid} ${CHILD_RETURN}
+  fi
+  # exit logbt with the same code as the child
+  exit ${CHILD_RETURN}
+}
+
+function setup_logbt() {
+  local settable_core_pattern=$(get_target_core_pattern)
+  if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
+    echo "[logbt] setting $(cat /proc/sys/kernel/core_pattern) -> ${settable_core_pattern}"
+    echo "${settable_core_pattern}" > /proc/sys/kernel/core_pattern
+  elif [[ ${PLATFORM_UNAME} == "Darwin" ]]; then
+    echo "[logbt] setting $(sysctl -n kern.corefile) -> ${settable_core_pattern}"
+    sysctl kern.corefile=${settable_core_pattern}
+  fi
+
+  local core_pattern=$(get_core_pattern)
+  validate_core_pattern ${core_pattern}
+  local core_directory=$(dirname ${core_pattern})
+
+  if [[ ! -d ${core_directory} ]]; then
+    echo "[logbt] creating directory for core files at '${core_directory}'"
+    mkdir -p -m a+w ${core_directory}
+  fi
+
+  error_on_existing_cores ${core_directory}
+
+}
+
+function test_logbt() {
+  ulimit -c unlimited
+  # note: this will only create a corefile on osx with bash 4.x (not the apple 3.x)
+  # create a program that crashes itself
+  echo '#!/usr/bin/env bash' > /tmp/crasher.sh
+  echo 'kill -SIGSEGV $$' >> /tmp/crasher.sh
+  chmod +x /tmp/crasher.sh
+  # run it in logbt
+  RETURN=0
+  ${BASH_SOURCE} --watch /tmp/crasher.sh >/tmp/logbt-stdout 2>/tmp/logbt-stderr || RETURN=$?
+  if [[ ${RETURN} != 139 ]] || [[ ! $(cat /tmp/logbt-stdout) =~ "Found corefile at" ]]; then
+    cat /tmp/logbt-stdout
+    cat /tmp/logbt-stderr
+    error "Expected return code of 139 and a corefile to be generated"
+  fi
+  if [[ ! $(cat /tmp/logbt-stdout) =~ "Found corefile at" ]]; then
+    cat /tmp/logbt-stdout
+    cat /tmp/logbt-stderr
+    error "Expected a corefile to be generated"
+  fi
+  if [[ ! $(cat /tmp/logbt-stdout) =~ "kill_builtin" ]]; then
+    cat /tmp/logbt-stdout
+    cat /tmp/logbt-stderr
+    error "Expected stdout to contain 'kill_builtin'"
+  fi
+  echo "[logbt] success"
+  # cleanup
+  rm /tmp/logbt-stderr
+  rm /tmp/logbt-stdout
+  rm /tmp/crasher.sh
+}
+
+function usage() {
+  >&2 echo "Usage for logbt:"
+  >&2 echo ""
+  >&2 echo "Setup logbt (requires root privileges):"
+  >&2 echo ""
+  >&2 echo "$ sudo logbt --setup"
+  >&2 echo ""
+  >&2 echo "Test logbt is setup correctly"
+  >&2 echo ""
+  >&2 echo "$ logbt --test"
+  >&2 echo ""
+  >&2 echo "Launch a program with logbt:"
+  >&2 echo ""
+  >&2 echo "$ logbt --watch ./program"
+  >&2 echo ""
+  >&2 echo "Other commands are:"
+  >&2 echo ""
+  >&2 echo " --current-pattern"
+  >&2 echo " --target-pattern"
+  >&2 echo " --version"
+  exit 1
+}
+
+function get_version() {
+  echo ${LOGBT_VERSION}
+}
+
+if [[ ! ${1:-} ]]; then
+  usage
+fi
+
+# https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash
+for i in "$@"
+do
+case $i in
+    --watch)
+    if [[ ! ${2:-} ]]; then
+      usage
+    fi
+    shift
+    launch_and_wait $@
+    ;;
+    --setup)
+    setup_logbt
+    shift
+    ;;
+    --test)
+    test_logbt
+    shift
+    ;;
+    --current-pattern)
+    get_core_pattern
+    ;;
+    --target-pattern)
+    get_target_core_pattern
+    ;;
+    -v | --version)
+    get_version
+    shift
+    ;;
+    -h | --help)
+    usage
+    shift
+    ;;
+    *)
+    usage
+    ;;
+esac
+done

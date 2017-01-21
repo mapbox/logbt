@@ -6,7 +6,12 @@
 
 1) Ensure the tests are passing
 
-2) Update CHANGELOG.md and "Install" section of the readme.md
+2) Update:
+
+- Version in logbt line 9
+- Version in package.json
+- CHANGELOG.md
+- "Install" section of the readme.md
 
 3) Git tag
 
