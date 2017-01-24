@@ -263,8 +263,7 @@ function launch_and_wait() {
 
   # Run the child process in a background process
   # in order to get the PID
-  export LOGBT_PID=$$;
-  $* & CHILD_PID=$!
+  LOGBT_PID=$$ $* & CHILD_PID=$!
 
   # Hook up function to run when logbt received signal
   trap "snapshot ${program} ${DEBUGGER} ${CHILD_PID}" USR1
@@ -306,7 +305,8 @@ function setup_logbt() {
   local settable_core_pattern=$(get_target_core_pattern)
   if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
     echo "[logbt] setting $(cat /proc/sys/kernel/core_pattern) -> ${settable_core_pattern}"
-    echo "[logbt] ${settable_core_pattern}" > /proc/sys/kernel/core_pattern
+    # write new value to /proc/sys/kernel/core_pattern
+    echo "${settable_core_pattern}" > /proc/sys/kernel/core_pattern
   elif [[ ${PLATFORM_UNAME} == "Darwin" ]]; then
     echo "[logbt] setting $(sysctl -n kern.corefile) -> ${settable_core_pattern}"
     sysctl kern.corefile=${settable_core_pattern}
