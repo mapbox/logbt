@@ -5,7 +5,6 @@ set -o pipefail
 
 source $(dirname "${BASH_SOURCE[0]}")/utils.sh
 
-export CODE=0
 export RESULT=0
 export WORKING_DIR="/tmp/logbt-unit-test-outputs"
 export STDOUT_LOGS="./stdout.txt"
@@ -36,15 +35,6 @@ function teardown() {
 }
 
 trap "teardown" EXIT
-
-function exit_tests() {
-    if [[ ${CODE} == 0 ]]; then
-        echo -e "\033[1m\033[32m* Success: ${passed} tests succeeded\033[0m";
-    else
-        echo -e "\033[1m\033[31m* Error: ${failures} test(s) failed\033[0m";
-    fi
-    exit ${CODE}
-}
 
 function exit_early() {
     if [[ ${CODE} != 0 ]]; then

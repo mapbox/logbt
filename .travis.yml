@@ -54,7 +54,9 @@ matrix:
       dist: trusty
       sudo: required
       script:
-        - ./test/docker-snapshotting.sh
+        - ./test/docker-snapshotting.sh INT
+        - ./test/docker-snapshotting.sh TERM
+        - ./test/docker-snapshotting.sh HUP
     - os: linux
       env: DOCKER=writable-proc
       dist: trusty
