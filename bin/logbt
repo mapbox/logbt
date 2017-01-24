@@ -26,7 +26,7 @@ else
 fi
 
 function error() {
-  >&2 echo "$@"
+  >&2 echo "[logbt] $@"
   exit 1
 }
 
@@ -195,12 +195,18 @@ function generic_signal_handler() {
   # order (accounts for an intermittant case where the above lines print after
   # the child outputs stdout during shutdown)
   sleep 1
-  kill -TERM ${child_pid}
-  CHILD_EXIT=0
-  wait ${child_pid} || CHILD_EXIT=$?
-  if [[ ${CHILD_EXIT} != 143 ]]; then
-    error "Child process exited abnormally: ${CHILD_EXIT}"
+  KILL_RETURN=0
+  kill -TERM ${child_pid} || KILL_RETURN=$?
+  if [[ ${KILL_RETURN} != 0 ]]; then
+    echo "[logbt] could not terminate child process (kill returned ${KILL_RETURN})"
+  else
+    CHILD_EXIT=0
+    wait ${child_pid} || CHILD_EXIT=$?
+    if [[ ${CHILD_EXIT} != 143 ]]; then
+      error "child process exited abnormally: ${CHILD_EXIT}"
+    fi
   fi
+  echo "[logbt] exiting with ${code}"
   exit ${code}
 }
 
@@ -223,7 +229,7 @@ function sigint_handler() {
   CHILD_EXIT=0
   wait ${child_pid} || CHILD_EXIT=$?
   if [[ ${CHILD_EXIT} != 130 ]]; then
-    error "Child process exited abnormally: ${CHILD_EXIT}"
+    echo "[logbt] child process exited with:${CHILD_EXIT}"
   fi
   exit ${code}
 }
@@ -257,7 +263,7 @@ function launch_and_wait() {
 
   # Run the child process in a background process
   # in order to get the PID
-  $* & CHILD_PID=$!
+  LOGBT_PID=$$ $* & CHILD_PID=$!
 
   # Hook up function to run when logbt received signal
   trap "snapshot ${program} ${DEBUGGER} ${CHILD_PID}" USR1
@@ -299,7 +305,7 @@ function setup_logbt() {
   local settable_core_pattern=$(get_target_core_pattern)
   if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
     echo "[logbt] setting $(cat /proc/sys/kernel/core_pattern) -> ${settable_core_pattern}"
-    echo "${settable_core_pattern}" > /proc/sys/kernel/core_pattern
+    echo "[logbt] ${settable_core_pattern}" > /proc/sys/kernel/core_pattern
   elif [[ ${PLATFORM_UNAME} == "Darwin" ]]; then
     echo "[logbt] setting $(sysctl -n kern.corefile) -> ${settable_core_pattern}"
     sysctl kern.corefile=${settable_core_pattern}
@@ -343,7 +349,7 @@ function test_logbt() {
     cat /tmp/logbt-stderr
     error "Expected stdout to contain 'kill_builtin'"
   fi
-  echo "[logbt] success"
+  echo "[logbt] test success (coredumps are working with core pattern: '$(get_core_pattern)')"
   # cleanup
   rm /tmp/logbt-stderr
   rm /tmp/logbt-stdout

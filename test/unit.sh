@@ -19,6 +19,7 @@ export SIGTERM_CODE="143"
 export SIGILL_CODE="132"
 export SIGHUP_CODE="129"
 export SIGKILL_CODE="137"
+export SIGINT_CODE="130"
 export COMMAND_NOT_FOUND_CODE="127"
 
 if [[ $(uname -s) == 'Darwin' ]]; then
@@ -77,6 +78,16 @@ function main() {
 
     mkdir -p ${WORKING_DIR}
 
+    # test killing logbt from child
+    export RESULT=0
+    run_test node -e "process.kill(process.env.LOGBT_PID,'SIGINT')"
+    assertEqual "${RESULT}" "${SIGINT_CODE}" "emitted expected signal send from child"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+    assertContains "$(stdout 3)" "received signal:${SIGINT_CODE} (INT)" "Emitted expected line of stdout with error code"
+    assertContains "$(stdout 4)" "child process exited with:0" "Child exited fine"
+
+    exit_early
 
     # test when an invalid command is passed to logbt
     export RESULT=0
