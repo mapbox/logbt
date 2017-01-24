@@ -19,6 +19,6 @@ RUN curl -sSfL https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o r
 
 RUN cat /proc/sys/kernel/core_pattern
 
-ENTRYPOINT ["./bin/logbt", "--setup", "--watch" ]
+ENTRYPOINT ["./bin/logbt", "--setup", "--" ]
 
 CMD ["node test/wait.js 1000"]

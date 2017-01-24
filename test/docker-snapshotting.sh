@@ -36,13 +36,18 @@ echo "sleeping for 1 sec"
 sleep 1
 
 echo "sending USR1"
-docker kill --signal="SIGUSR1" logbt-signals
+KILL_RETURN=0
+docker kill --signal="SIGUSR1" logbt-signals || KILL_RETURN=$?
+assertContains "${KILL_RETURN}" "0" "Should be able to send SIGUSR1"
 
 echo "sleeping for 4 sec"
 sleep 4
 
 echo "sending ${SIGNAL}"
-docker kill --signal="SIG${SIGNAL}" logbt-signals
+KILL_RETURN=0
+docker kill --signal="SIG${SIGNAL}" logbt-signals || KILL_RETURN=$?
+assertContains "${KILL_RETURN}" "0" "Should be able to kill docker container with SIG${SIGNAL}"
+
 
 echo "waiting for log tracking to finish"
 wait ${LOG_TRACKER}
