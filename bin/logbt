@@ -263,7 +263,8 @@ function launch_and_wait() {
 
   # Run the child process in a background process
   # in order to get the PID
-  LOGBT_PID=$$ $* & CHILD_PID=$!
+  export LOGBT_PID=$$;
+  $* & CHILD_PID=$!
 
   # Hook up function to run when logbt received signal
   trap "snapshot ${program} ${DEBUGGER} ${CHILD_PID}" USR1
