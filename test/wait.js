@@ -7,17 +7,12 @@ if (!process.argv[2]) {
 
 console.log('Process id is',process.pid);
 
-Object.keys(constants).forEach(function(c) {
-    if (c.indexOf('SIG') == 0 &&
-        c !== 'SIGKILL' &&
-        c !== 'SIGSTOP') {
-        // attach handlers for all signals
-        process.on(c,function() {
-            console.log("node received",c);
-            process.exit(constants[c]+128);
-        })
-    }
-});
+process.on('SIGTERM',function() {
+    console.log("node received",c);
+    setTimeout(function() {
+        process.exit(constants[c]+128);
+    }, 200);
+})
 
 var interval = process.argv[2]*1000;
 
