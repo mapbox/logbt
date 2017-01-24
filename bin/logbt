@@ -324,7 +324,7 @@ function test_logbt() {
   chmod +x /tmp/crasher.sh
   # run it in logbt
   RETURN=0
-  ${BASH_SOURCE} --watch /tmp/crasher.sh >/tmp/logbt-stdout 2>/tmp/logbt-stderr || RETURN=$?
+  ${BASH_SOURCE} -- /tmp/crasher.sh >/tmp/logbt-stdout 2>/tmp/logbt-stderr || RETURN=$?
   if [[ ${RETURN} != 139 ]] || [[ ! $(cat /tmp/logbt-stdout) =~ "Found corefile at" ]]; then
     cat /tmp/logbt-stdout
     cat /tmp/logbt-stderr
@@ -360,7 +360,7 @@ function usage() {
   >&2 echo ""
   >&2 echo "Launch a program with logbt:"
   >&2 echo ""
-  >&2 echo "$ logbt --watch ./program"
+  >&2 echo "$ logbt -- ./program"
   >&2 echo ""
   >&2 echo "Other commands are:"
   >&2 echo ""
@@ -382,7 +382,7 @@ fi
 for i in "$@"
 do
 case $i in
-    --watch)
+    --)
     if [[ ! ${2:-} ]]; then
       usage
     fi

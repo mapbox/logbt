@@ -65,8 +65,8 @@ function all_lines() {
 
 function run_test() {
     export RESULT=0
-    ./bin/logbt --watch $@ >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
-    echo -e "\033[1m\033[32mok\033[0m - ran ./bin/logbt --watch $@ >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    ./bin/logbt -- $@ >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    echo -e "\033[1m\033[32mok\033[0m - ran ./bin/logbt -- $@ >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     export passed=$((passed+1))
 }
 
@@ -84,15 +84,14 @@ function main() {
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
     assertContains "$(stdout 3)" "exit with code:${SIGILL_CODE} (ILL)" "Emitted expected line of stdout with error code"
     assertContains "$(stdout 4)" "Found corefile at" "Found corefile for given PID"
-    assertContains "$(all_lines)" "node::Start" "Found node::Start in backtrace output (from ILL)"
     assertContains "$(all_lines)" "ParseJson" "Found node::Start in backtrace output (from ILL)"
 
     exit_early
 
     # test sending custom USR1 signal (158) to logbt
     # background logbt and grab its PID
-    ./bin/logbt --watch node test/wait.js 30 >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
-    echo -e "\033[1m\033[32mok\033[0m - ran ./bin/logbt --watch node test/wait.js 30 >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    ./bin/logbt -- node test/wait.js 30 >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
+    echo -e "\033[1m\033[32mok\033[0m - ran ./bin/logbt -- node test/wait.js 30 >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     # give logbt time to startup
     WAIT_BEFORE_SIGNAL=1
     sleep ${WAIT_BEFORE_SIGNAL}
@@ -115,7 +114,7 @@ function main() {
 
     # test logbt misusage
     export RESULT=0
-    ./bin/logbt --watch >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    ./bin/logbt -- >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
     assertEqual "${RESULT}" "1" "invalid usage (no args) should result in error code of 1"
     # check stderr
     assertContains "$(stderr 1)" "Usage for logbt:" "Emitted expected usage error"
@@ -148,7 +147,7 @@ function main() {
     # run node process that waits to exit for set time
     # And ensure timeout is shorter and everything closes down correctly
     TIME_WAITING="10"
-    timeout_cmd="timeout 4 ./bin/logbt --watch node test/wait.js ${TIME_WAITING}"
+    timeout_cmd="timeout 4 ./bin/logbt -- node test/wait.js ${TIME_WAITING}"
     ${timeout_cmd} >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
     echo -e "\033[1m\033[32mok\033[0m - ran ${timeout_cmd} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     assertEqual "${RESULT}" "${TIMEOUT_CODE}" "emitted expected timeout code"
@@ -171,7 +170,7 @@ function main() {
     exit_early
 
     # test sending HUP signal to logbt
-    watcher_command="./bin/logbt --watch node test/wait.js 10"
+    watcher_command="./bin/logbt -- node test/wait.js 10"
     # background logbt and grab its PID
     ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
     echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
@@ -185,7 +184,7 @@ function main() {
     exit_early
 
     # test sending TERM signal to logbt
-    watcher_command="./bin/logbt --watch node test/wait.js 10"
+    watcher_command="./bin/logbt -- node test/wait.js 10"
     # background logbt and grab its PID
     ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
     echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
