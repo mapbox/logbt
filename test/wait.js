@@ -8,9 +8,9 @@ if (!process.argv[2]) {
 console.log('Process id is',process.pid);
 
 process.on('SIGTERM',function() {
-    console.log("node received",c);
+    console.log("node received",'SIGTERM');
     setTimeout(function() {
-        process.exit(constants[c]+128);
+        process.exit(constants['SIGTERM']+128);
     }, 200);
 })
 
