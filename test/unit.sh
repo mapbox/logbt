@@ -76,6 +76,19 @@ function main() {
 
     mkdir -p ${WORKING_DIR}
 
+
+    # test node --abort-on-uncaught-exception
+    run_test node --abort-on-uncaught-exception -e "JSON.parse({})"
+    assertEqual "${RESULT}" "${SIGILL_CODE}" "emitted expected signal from illegal instruction error"
+    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+    assertContains "$(stdout 3)" "exit with code:${SIGILL_CODE} (ILL)" "Emitted expected line of stdout with error code"
+    assertContains "$(stdout 4)" "Found corefile at" "Found corefile for given PID"
+    assertContains "$(all_lines)" "node::Start" "Found node::Start in backtrace output (from ILL)"
+    assertContains "$(all_lines)" "ParseJson" "Found node::Start in backtrace output (from ILL)"
+
+    exit_early
+
     # test sending custom USR1 signal (158) to logbt
     # background logbt and grab its PID
     ./bin/logbt --watch node test/wait.js 30 >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
