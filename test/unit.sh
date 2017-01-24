@@ -19,6 +19,7 @@ export SIGTERM_CODE="143"
 export SIGILL_CODE="132"
 export SIGHUP_CODE="129"
 export SIGKILL_CODE="137"
+export COMMAND_NOT_FOUND_CODE="127"
 
 if [[ $(uname -s) == 'Darwin' ]]; then
     export SIGBUS_CODE="138"
@@ -76,6 +77,20 @@ function main() {
 
     mkdir -p ${WORKING_DIR}
 
+
+    # test when an invalid command is passed to logbt
+    export RESULT=0
+    ./bin/logbt -- doesnotexist >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    assertEqual "${RESULT}" "${COMMAND_NOT_FOUND_CODE}" "command not found should return ${COMMAND_NOT_FOUND_CODE}"
+
+    exit_early
+
+    export RESULT=0
+    # this one is odd - why does it return HUP?
+    ./bin/logbt -- /doesnotexist >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    assertEqual "${RESULT}" "1" "Returns HUP"
+
+    exit_early
 
     # test node --abort-on-uncaught-exception
     run_test node --abort-on-uncaught-exception -e "JSON.parse({})"
