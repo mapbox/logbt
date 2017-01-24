@@ -263,7 +263,13 @@ function launch_and_wait() {
 
   # Run the child process in a background process
   # in order to get the PID
-  LOGBT_PID=$$ $* & CHILD_PID=$!
+  if [[ ${LD_PRELOAD:-} ]] && [[ ${PLATFORM_UNAME} == 'Darwin' ]]; then
+      # on os x DYLD_INSERT_LIBRARIES is blocked from being inherited
+      # so we accept LD_PRELOAD and foreward along
+      DYLD_INSERT_LIBRARIES=${LD_PRELOAD} LOGBT_PID=$$ $* & CHILD_PID=$!
+  else
+      LOGBT_PID=$$ $* & CHILD_PID=$!
+  fi
 
   # Hook up function to run when logbt received signal
   trap "snapshot ${program} ${DEBUGGER} ${CHILD_PID}" USR1

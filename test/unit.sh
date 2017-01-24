@@ -78,6 +78,18 @@ function main() {
 
     mkdir -p ${WORKING_DIR}
 
+    # ensure we can pass along DYLD_INSERT_LIBRARIES on OS X
+    if [[ $(uname -s) == 'Darwin' ]]; then
+        export RESULT=0
+        LD_PRELOAD=/usr/lib/libc++.dylib run_test node -e "console.log(process.env.DYLD_INSERT_LIBRARIES);"
+        assertEqual "${RESULT}" "0" "emitted expected signal send from child"
+        assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
+        assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
+        assertContains "$(stdout 3)" "/usr/lib/libc++.dylib" "Emitted expected line of stdout with error code"
+    fi
+
+    exit_early
+
     # test killing logbt from child
     export RESULT=0
     run_test node -e "process.kill(process.env.LOGBT_PID,'SIGINT')"
