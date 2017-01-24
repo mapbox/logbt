@@ -24,10 +24,11 @@ function assertContains() {
 function exit_tests() {
     if [[ ${failures} == 0 ]]; then
         echo -e "\033[1m\033[32m* Success: ${passed} tests succeeded\033[0m";
+        exit 0
     else
         echo -e "\033[1m\033[31m* Error: ${failures} test(s) failed\033[0m";
+        exit 1
     fi
-    exit 1
 }
 
 
