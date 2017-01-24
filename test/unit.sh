@@ -37,7 +37,7 @@ function teardown() {
 trap "teardown" EXIT
 
 function exit_early() {
-    if [[ ${CODE} != 0 ]]; then
+    if [[ ${failures} != 0 ]]; then
         echo "bailing tests early"
         echo
         echo "dumping log of stdout"
