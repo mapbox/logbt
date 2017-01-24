@@ -15,11 +15,14 @@ trap "teardown" EXIT
 
 SIGNAL=${1:-TERM}
 
-echo "Testing stopping container with ${SIGNAL}"
-
 if [[ "$(docker images -q logbt-signals 2> /dev/null)" == "" ]]; then
+    echo "Building container"
     docker build -t logbt-signals -f Dockerfile.signals .
+else
+    echo "Container already built"
 fi
+
+echo "Testing stopping container with ${SIGNAL}"
 
 echo "starting detached container"
 docker run --detach --privileged -it --name="logbt-signals" logbt-signals
