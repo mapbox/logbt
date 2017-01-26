@@ -108,13 +108,6 @@ function main() {
 
     exit_early
 
-    export RESULT=0
-    # this one is odd - why does it return HUP?
-    ./bin/logbt -- /doesnotexist >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
-    assertEqual "${RESULT}" "1" "Returns HUP"
-
-    exit_early
-
     # test node --abort-on-uncaught-exception
     run_test node --abort-on-uncaught-exception -e "JSON.parse({})"
     assertEqual "${RESULT}" "${SIGILL_CODE}" "emitted expected signal from illegal instruction error"
