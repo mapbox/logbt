@@ -80,7 +80,7 @@ logbt -- <your program> <your program args>
 
 Then logbt will run as long as your program runs. If logbt is stopped it will stop your program by sending `SIGTERM`. If your program exits then `logbt` will exit with the same exit code. If your program crashes then `logbt` will display a backtrace.
 
-### Additional options
+#### Additional options
 
  - `logbt --test`: tests that `logbt` is functioning correctly. Should be run after `logbt --setup`
  - `logbt --current-pattern`: displays the current `core_pattern` value on the system (`/proc/sys/kernel/core_pattern` on linux and `sysctl -n kern.corefile` on OS X)
@@ -115,3 +115,27 @@ Then within that container you can write to `writable-proc` and it will be refle
 After that command both `/writable-proc/sys/kernel/core_pattern` and `/proc/sys/kernel/core_pattern` will be equivalent and `logbt --test` should work.
 
 But surprisingly this still modifies the host `core_pattern` so there is no major advantage to this method over running `logbt --setup` directly on the host.
+
+
+### FAQ
+
+**Q:** I'm seeing a warning in the backtrace that says "core file may not match specified executable file". Why is that happening and is it a problem?
+
+As long as your backtrace looks decent, that warning is not be a problem. It is expected if the program you launched with `logbt` has customized its process "title". For example, with `node` you can do:
+
+```js
+process.title = 'custom-name';
+```
+
+When `gdb` prints `core file may not match specified executable file` it is because it has noticed that the binary name `node` does not match `custom-name`. This is harmless.
+
+**Q:** I'm seeing a message from logbt like `[logbt] No corefile found at /tmp/logbt-coredumps/core.641.*`. Is that a problem or indication that backtraces are not working?
+
+If you still see a backtrace after that, everything is okay. If you see a backtrace you also will have seen a message from logbt like this before printing the backtrace:
+
+```
+[logbt] Found corefile (non-tracked) at /tmp/logbt-coredumps/core.642.!root!.nvm!versions!node!v4.7.2!bin!node
+[logbt] Processing cores...
+```
+
+What is likely happening is that you've passed to `logbt` a program that is not the one that crashed but rather the parent of a child that crashed. In this case `logbt` will not be able to find the coredump by `<pid>` because `logbt` only tracks the `<pid>` of the parent. If a child crashes `logbt` should still find the coredump but considers it `(non-tracked)`, which just means it found a coredump from some program besides the parent.
