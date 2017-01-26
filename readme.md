@@ -119,23 +119,31 @@ But surprisingly this still modifies the host `core_pattern` so there is no majo
 
 ### FAQ
 
-**Q:** I'm seeing a warning in the backtrace that says "core file may not match specified executable file". Why is that happening and is it a problem?
+#### Q: core file may not match
 
-As long as your backtrace looks decent, that warning is not be a problem. It is expected if the program you launched with `logbt` has customized its process "title". For example, with `node` you can do:
+I'm seeing a warning in the backtrace that says "core file may not match specified executable file". Why is that happening and is it a problem?
+
+**Answer:**
+
+This is normal and harmless if the program you launched with `logbt` has customized its process "title". For example, with `node` you can do:
 
 ```js
 process.title = 'custom-name';
 ```
 
-When `gdb` prints `core file may not match specified executable file` it is because it has noticed that the binary name `node` does not match `custom-name`. This is harmless.
+When `gdb` prints `core file may not match specified executable file` it is saying that it noticed your modification of the process title.
 
-**Q:** I'm seeing a message from logbt like `[logbt] No corefile found at /tmp/logbt-coredumps/core.641.*`. Is that a problem or indication that backtraces are not working?
+#### Q: non-tracked corefiles
 
-If you still see a backtrace after that, everything is okay. If you see a backtrace you also will have seen a message from logbt like this before printing the backtrace:
+I'm seeing a message from logbt like `[logbt] No corefile found at /tmp/logbt-coredumps/core.641.*`. Is that a problem or indication that backtraces are not working?
+
+**Answer:**
+
+If you also see a message following it like:
 
 ```
 [logbt] Found corefile (non-tracked) at /tmp/logbt-coredumps/core.642.!root!.nvm!versions!node!v4.7.2!bin!node
 [logbt] Processing cores...
 ```
 
-What is likely happening is that you've passed to `logbt` a program that is not the one that crashed but rather the parent of a child that crashed. In this case `logbt` will not be able to find the coredump by `<pid>` because `logbt` only tracks the `<pid>` of the parent. If a child crashes `logbt` should still find the coredump but considers it `(non-tracked)`, which just means it found a coredump from some program besides the parent.
+Then everything is okay. What is happening is that `logbt` uses the `<pid>` (process id) of the program it launches to look for a corefile when that program crashes. Let's call that program the `parent` process. In this case the `parent` did not crash (pid of 641) but a program it launched (a child) crashed (pid of 642). Because the parent correctly reported the crash to `logbt` (via returning an exit code indicating a crash) then `logbt` knows to look harder for corefiles that may have been created from a crashing child. In this case `logbt` prints a message that it found a `(non-tracked)` corefile to indicate a child crashed rather than a parent.
