@@ -1,10 +1,7 @@
 # Upgrading
 
-This file contains instructions for users of logbt who are upgrading from
+This file contains instructions for users of `logbt` who are upgrading from
 one version to another.
-
-You do not need to change anything if only the minor version changes, but it
-is best to keep up with changes if you can.
 
 See also the [Changelog](CHANGELOG.md).
 
@@ -30,4 +27,4 @@ Then you run:
 logbt -- <your program>
 ```
 
-See the [README for more detailed usage info](README.md)
+See the [README for more detailed usage info](readme.md#usage)

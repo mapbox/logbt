@@ -12,6 +12,10 @@ The `logbt` command can also:
   - Automatically clean up coredumps on the system (to avoid your disk filling up)
   - Work on sudo-enabled travis-ci.org machines
 
+### Upgrading
+
+If upgrading from a previous logbt version see [Upgrading.md](UPGRADING.md) for details on how to adapt your code.
+
 ### Supports
 
  - Linux and OS X
@@ -24,7 +28,7 @@ Requires `gdb` on linux and `lldb` on OS X.
 Recommended install of gdb on linux:
 
 ```
-mkdir mason && curl -sSfL https://github.com/mapbox/mason/archive/v0.5.0.tar.gz | tar --gunzip --extract --strip-components=1 --directory=./mason
+mkdir mason && curl -sSfL https://github.com/mapbox/mason/archive/v0.6.0.tar.gz | tar --gunzip --extract --strip-components=1 --directory=./mason
 ./mason/mason install gdb 7.12
 export PATH=$(./mason/mason prefix gdb 7.12)/bin:${PATH}
 which gdb
@@ -37,7 +41,7 @@ Recommended install of lldb on OS X is to get latest XCode.
 To install `logbt` to `/usr/local/bin`:
 
 ```sh
-curl -sSfL https://github.com/mapbox/logbt/archive/v1.6.0.tar.gz | tar --gunzip --extract --strip-components=1 --exclude="*md" --exclude="test*" --directory=/usr/local
+curl -sSfL https://github.com/mapbox/logbt/archive/v2.0.0.tar.gz | tar --gunzip --extract --strip-components=1 --exclude="*md" --exclude="test*" --directory=/usr/local
 which logbt
 /usr/local/bin/logbt
 logbt --version
@@ -46,7 +50,7 @@ logbt --version
 Locally (perhaps if your user cannot write to `/usr/local`):
 
 ```sh
-curl -sSfL https://github.com/mapbox/logbt/archive/v1.6.0.tar.gz | tar --gunzip --extract --strip-components=2 --exclude="*md" --exclude="test*" --directory=.
+curl -sSfL https://github.com/mapbox/logbt/archive/v2.0.0.tar.gz | tar --gunzip --extract --strip-components=2 --exclude="*md" --exclude="test*" --directory=.
 ./logbt --version
 ```
 
