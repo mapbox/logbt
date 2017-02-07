@@ -9,7 +9,6 @@
 2) Update:
 
 - Version in logbt line 9
-- Version in package.json
 - CHANGELOG.md
 - "Install" section of the readme.md
 
