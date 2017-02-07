@@ -23,7 +23,7 @@ If upgrading from a previous logbt version see [Upgrading.md](UPGRADING.md) for 
 
 ### Depends
 
-Requires `gdb` on linux and `lldb` on OS X.
+The [`logbt` run command](#run-logbt) requires `gdb` on linux and `lldb` on OS X.
 
 Recommended install of gdb on linux:
 
@@ -58,7 +58,7 @@ curl -sSfL https://github.com/mapbox/logbt/archive/v2.0.0.tar.gz | tar --gunzip 
 
 There are two main modes to using `logbt`. First you run `logbt --setup` and second you run `logbt -- <your program>` to launch your program with it.
 
-#### logbt --setup
+#### Setup logbt
 
 ```bash
 sudo logbt --setup
@@ -74,9 +74,13 @@ Common default values for `core_pattern` on linux (which do not work with `logbt
   - `|/usr/share/apport/apport %p %s %c` Seen on Ubuntu Precise
   - `|/usr/share/apport/apport %p %s %c %P` Seen on Ubuntu Trusty
 
-#### logbt -- <your program>
+#### Run logbt
 
-To launch your program with `logbt` run:
+All commands passed to `logbt` after `--` are interpreted as the program to run and any arguments to pass to that program.
+
+This is known as the `run` command.
+
+Therefore, to launch your program with `logbt` run:
 
 ```bash
 logbt -- <your program> <your program args>
