@@ -74,7 +74,7 @@ Common default values for `core_pattern` on linux (which do not work with `logbt
   - `|/usr/share/apport/apport %p %s %c` Seen on Ubuntu Precise
   - `|/usr/share/apport/apport %p %s %c %P` Seen on Ubuntu Trusty
 
-#### logbt --
+#### logbt -- <your program>
 
 To launch your program with `logbt` run:
 
@@ -82,7 +82,7 @@ To launch your program with `logbt` run:
 logbt -- <your program> <your program args>
 ````
 
-Then logbt will run as long as your program runs. If logbt is stopped it will stop your program by sending `SIGTERM`. If your program exits then `logbt` will exit with the same exit code. If your program crashes then `logbt` will display a backtrace.
+Then logbt will run as long as your program runs. If `logbt` your program will be killed with `SIGTERM`. If your program exits then `logbt` will exit with the same exit code. If your program crashes then `logbt` will display a backtrace and exit with the crashing exit code.
 
 #### Additional options
 
@@ -98,7 +98,7 @@ Docker linux containers inherit their kernel settings from the linux host. Becau
 
 If you try to run `logbt --setup` in a container without the `--privileged` flag you will see an error like: `/proc/sys/kernel/core_pattern: Read-only file system`
 
-Beware that running `logbt --setup` in a `privileged` container will change the value for the host (when the host is linux).
+:warning: Running `logbt --setup` in a `privileged` container will change the `core_pattern` value for the host. On OS X (with docker for mac) the `core_pattern` value will also be changed in the underlying linux host run by the hypervisor. You can see this by logging into the linux vm with `screen` by doing `screen ~/Library/Containers/com.docker.docker/Data/com.docker.driver.amd64-linux/tty` and then `cat /proc/sys/kernel/core_pattern`. By default it will be `cores` and after running a docker container that runs `logbt --setup` with `docker run --privileged` it will be equal to the `logbt` internal value for linux of `/tmp/logbt-coredumps/core.%p.%E`. This will be inherited for all other docker containers you run on OS X.
 
 The `--privileged` only applies to `docker run` and not `docker build` (refs https://github.com/docker/docker/issues/1916)
 
