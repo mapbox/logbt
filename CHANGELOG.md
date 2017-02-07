@@ -8,36 +8,39 @@
 
 # v1.6.0
 
- - Fixed handling of non-tracked cores on linux
+ - Fixed handling of non-tracked cores on linux (from crashing "grandchildren")
 
 # v1.5.0
 
- - Fixed edge case in parsing corefile path on linux (when extra . in path to binary)
+ - Fixed edge case in parsing corefile path on linux (when an extra `.` occurred in path to the binary)
 
 # v1.4.0
 
- - Fixed support for this situation: `logbt ./bash_script_that_calls_a_child_that_crashes.sh`. Previously
-   this would result in broken backtraces because we did not know what native program crashed and instead
-   incorrectly passed the non-native program name to gdb/lldb.
+ - Fixed support for lauching bash scripts with `logbt`. Previously only native programs were supported
 
 # v1.3.0
 
  - Now displays backtraces for all likely descendant processes. This means that
-   a backtrace will be displayed if a process crashes that is a child of the
-   program that `logbt` launches
+   a backtrace will be displayed for "grandchildren" children of the
+   program that `logbt` launches as well as the direct child.
  - Now warns at startup if existing corefiles are detected
 
 # v1.2.0
 
- - Fixed display of backtraces by tracking pid of child program
- - Added tests
+ - Add support for when multiple programs crash by tracking pid of the child program
+ - Added unit tests
  - Added sudo/sudoless support
  - Added support for both linux and osx
 
 # v1.1.0
 
  - Second release (not yet functional)
+ - Now will print backtrace for any crash that generates a corefile (not just SIGSEGV)
 
 # v1.0.0
 
- - First release (not yet functional)
+ - First release.
+ - Must be run as root/sudo
+ - Only prints backtrace when exit code of program is `139` (aka SIGSEGV/segfaults).
+    - Will not work for aborts (SIGABRT), illegal instructions (SIGILL), floating point errors (SIGFPE), bus errors (SIGBUS), or other causes of C/C++ crashes.
+ - Only prints backtrace for one corefile. If multiple processes crash behavior is undefined.
