@@ -1,0 +1,25 @@
+FROM ubuntu:12.04
+
+# docker build -t logbt-from-host -f Dockerfile.ubuntu-precise-logbt-from-host .
+# docker run --cap-add SYS_PTRACE -v $(pwd)/bin/logbt:/usr/local/bin/logbt logbt-from-host
+
+ENV WORKINGDIR /usr/local/src
+WORKDIR ${WORKINGDIR}
+
+# we copy only the tests
+# since we assume logbt from the
+# host is used
+COPY test test
+
+RUN apt-get update -y && \
+ apt-get install -y bash curl gdb git-core g++
+
+RUN curl -sSfL https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o run && \
+  chmod +x ./run && \
+  NV=4.4.3 NP=$(uname | tr A-Z a-z)-x64 OD=/usr/local ./run
+
+# we assume logbt is being mapped to /usr/local/bin from host
+# and that /usr/local/bin is on PATH
+CMD logbt --core-pattern --test && \
+    export PATH_TO_LOGBT=/usr/local/bin && \
+    ./test/unit.sh
