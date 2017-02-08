@@ -22,6 +22,8 @@ export SIGKILL_CODE="137"
 export SIGINT_CODE="130"
 export COMMAND_NOT_FOUND_CODE="127"
 
+export PATH_TO_LOGBT=${PATH_TO_LOGBT:-./bin}
+
 if [[ $(uname -s) == 'Darwin' ]]; then
     export SIGBUS_CODE="138"
     export SIGUSR1_CODE="158"
@@ -67,8 +69,8 @@ function all_lines() {
 
 function run_test() {
     export RESULT=0
-    ./bin/logbt -- $@ >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
-    echo -e "\033[1m\033[32mok\033[0m - ran ./bin/logbt -- $@ >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    ${PATH_TO_LOGBT}/logbt -- $@ >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    echo -e "\033[1m\033[32mok\033[0m - ran ${PATH_TO_LOGBT}/logbt -- $@ >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     export passed=$((passed+1))
 }
 
@@ -103,7 +105,7 @@ function main() {
 
     # test when an invalid command is passed to logbt
     export RESULT=0
-    ./bin/logbt -- doesnotexist >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    ${PATH_TO_LOGBT}/logbt -- doesnotexist >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
     assertEqual "${RESULT}" "${COMMAND_NOT_FOUND_CODE}" "command not found should return ${COMMAND_NOT_FOUND_CODE}"
 
     exit_early
@@ -121,8 +123,8 @@ function main() {
 
     # test sending custom USR1 signal (158) to logbt
     # background logbt and grab its PID
-    ./bin/logbt -- node test/wait.js 30 >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
-    echo -e "\033[1m\033[32mok\033[0m - ran ./bin/logbt -- node test/wait.js 30 >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    ${PATH_TO_LOGBT}/logbt -- node test/wait.js 30 >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
+    echo -e "\033[1m\033[32mok\033[0m - ran ${PATH_TO_LOGBT}/logbt -- node test/wait.js 30 >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     # give logbt time to startup
     WAIT_BEFORE_SIGNAL=1
     sleep ${WAIT_BEFORE_SIGNAL}
@@ -145,7 +147,7 @@ function main() {
 
     # test logbt misusage
     export RESULT=0
-    ./bin/logbt -- >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    ${PATH_TO_LOGBT}/logbt -- >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
     assertEqual "${RESULT}" "1" "invalid usage (no args) should result in error code of 1"
     # check stderr
     assertContains "$(stderr 1)" "Usage for logbt:" "Emitted expected usage error"
@@ -154,7 +156,7 @@ function main() {
 
     # test logbt version
     export RESULT=0
-    ./bin/logbt --version >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    ${PATH_TO_LOGBT}/logbt --version >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
     assertEqual "${RESULT}" "0" "Should result in error code of 0"
     # check stdout
     assertContains "$(stdout 1)" "v" "Should contain v for version number"
@@ -178,7 +180,7 @@ function main() {
     # run node process that waits to exit for set time
     # And ensure timeout is shorter and everything closes down correctly
     TIME_WAITING="10"
-    timeout_cmd="timeout 4 ./bin/logbt -- node test/wait.js ${TIME_WAITING}"
+    timeout_cmd="timeout 4 ${PATH_TO_LOGBT}/logbt -- node test/wait.js ${TIME_WAITING}"
     ${timeout_cmd} >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
     echo -e "\033[1m\033[32mok\033[0m - ran ${timeout_cmd} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     assertEqual "${RESULT}" "${TIMEOUT_CODE}" "emitted expected timeout code"
@@ -201,7 +203,7 @@ function main() {
     exit_early
 
     # test sending HUP signal to logbt
-    watcher_command="./bin/logbt -- node test/wait.js 10"
+    watcher_command="${PATH_TO_LOGBT}/logbt -- node test/wait.js 10"
     # background logbt and grab its PID
     ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
     echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
@@ -215,7 +217,7 @@ function main() {
     exit_early
 
     # test sending TERM signal to logbt
-    watcher_command="./bin/logbt -- node test/wait.js 10"
+    watcher_command="${PATH_TO_LOGBT}/logbt -- node test/wait.js 10"
     # background logbt and grab its PID
     ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
     echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
