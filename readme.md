@@ -96,6 +96,38 @@ Then logbt will run as long as your program runs. If `logbt` your program will b
  - `logbt --version`: Prints the `logbt` version
  - `logbt --help`: Prints the `logbt` usage help
 
+### Snapshotting
+
+A experimental feature of `logbt` >= 2.x is the ability to send a `USR1` signal and to generate backtrace of the healthy child program.
+
+```bash
+kill -USR1 <pid of logbt>
+```
+
+Or, if running `logbt` in a docker container, you can send this via the host like:
+
+```
+# see ./test/docker-snapshotting.sh for a full example
+docker kill --signal="SIGUSR1" <container id>
+```
+
+When `USR1` is received by `logbt` the child program is paused (`SIGSTOP`), a backtrace is generated, and then the child program is resumed (`SIGCONT`).
+
+There are several limitations to consider before using this feature. Future `logbt` versions will likely change this interface to use [bcc tools](https://iovisor.github.io/bcc/) for snapshotting due to limitations 1/2 below.
+
+1) Not recommended for production
+
+This is useful for checking on what the child program is doing for debugging, but should not be used in production systems because the child program is stopped for potentially >= several seconds.
+
+2) ptrace support
+
+`ptrace` support is needed to allow `gdb` on linux to attach to the child process. To enable `ptrace` in a docker container you must run with `--cap-add SYS_PTRACE` or `--privileged`. And `ptrace_scope` scope in the kernel likely will need to be set to zero like: `sudo bash -c "echo 0 > /proc/sys/kernel/yama/ptrace_scope"`. Another final limitation of ptrace is that only one tool may be attached at one time.
+
+3) child limitations
+
+The `child` must be the program you want snapshotted. While `logbt` supports tracking crashes of any children or grandchildren of the program run by `logbt` the snapshotting will only be done on the direct child.
+
+
 ### Docker considerations
 
 Docker linux containers inherit their kernel settings from the linux host. Because the `core_pattern` modified by [`logbt --setup`](#Logbt-setup) is kernel-level the `--setup` command must be either be run as root on the linux host (recommended) or within a container run with the `--privileged` flag.
