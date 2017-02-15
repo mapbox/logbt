@@ -2,7 +2,9 @@
 
  - Added [UPGRADING.md](UPGRADING.md) doc
  - Now you must first run `logbt --setup` with root privileges to setup the core_pattern
+   - The `--setup` command sets a core_pattern of `/tmp/logbt-coredump/core.%p`
  - Now `logbt` does not need to run as root after `logbt --setup`
+   - When run as non-root, the core_pattern of `/tmp/logbt-coredump/core.%p` is expected
  - Added `logbt --test` command to ensure backtraces are working
  - Refactored internal code to avoid mutable global variables
 
@@ -34,12 +36,13 @@
 
 # v1.1.0
 
- - Second release (not yet functional)
  - Now will print backtrace for any crash that generates a corefile (not just SIGSEGV)
+ - Sets a core_pattern of `/tmp/logbt-coredump/core.%p` at startup
 
 # v1.0.0
 
  - First release.
+ - Sets a core_pattern of `/tmp/logbt-coredump` at startup
  - Must be run as root/sudo
  - Only prints backtrace when exit code of program is `139` (aka SIGSEGV/segfaults).
     - Will not work for aborts (SIGABRT), illegal instructions (SIGILL), floating point errors (SIGFPE), bus errors (SIGBUS), or other causes of C/C++ crashes.
