@@ -1,3 +1,9 @@
+# v2.0.1
+
+ - Now attempts to display coredumps for all exit codes. This is important for detecting coredumps
+   when there are multiple levels of indirection and commands do not correctly return the exit code
+   of children that crashed.
+
 # v2.0.0
 
  - Added [UPGRADING.md](UPGRADING.md) doc

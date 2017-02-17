@@ -8,9 +8,6 @@ PLATFORM_UNAME=$(uname -s)
 REQUIRED_FILENAME="core"
 LOGBT_VERSION="v2.0.0"
 BASE_CORE_DIRECTORY=/tmp/logbt-coredumps
-# signals with possible coredumps that we'd like backtraces for
-# http://man7.org/linux/man-pages/man7/signal.7.html
-BACKTRACE_SIGNALS=("QUIT" "ILL" "ABRT" "FPE" "SEGV" "BUS" "SYS" "TRAP" "XCPU" "XFSZ")
 
 if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
   REQUIRED_PATTERN="${REQUIRED_FILENAME}.%p.%E"
@@ -28,17 +25,6 @@ fi
 function error() {
   >&2 echo "[logbt] $@"
   exit 1
-}
-
-# http://stackoverflow.com/a/8574392
-function contains() {
-  local e
-  for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
-  return 1
-}
-
-function is_crashing_signal() {
-  return $(contains $(kill -l ${1}) "${BACKTRACE_SIGNALS[@]}")
 }
 
 function process_core() {
@@ -123,10 +109,8 @@ function backtrace {
   local debugger=${3}
   local child_pid=${4}
   local child_return=${5}
-  if is_crashing_signal ${child_return}; then
-    find_core_by_pid ${program} ${core_directory} ${debugger} ${child_pid}
-    find_remaining_cores ${program} ${core_directory} ${debugger}
-  fi
+  find_core_by_pid ${program} ${core_directory} ${debugger} ${child_pid}
+  find_remaining_cores ${program} ${core_directory} ${debugger}
 }
 
 function warn_on_existing_cores() {
