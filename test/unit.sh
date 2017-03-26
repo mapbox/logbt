@@ -375,7 +375,7 @@ function main() {
     assertEqual "${RESULT}" "${SIGFPE_CODE}" "emitted expected signal"
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
-    assertContains"$(stdout 3)" "exit with code:${SIGFPE_CODE} (FPE)" "Emitted expected line of stdout with error code"
+    assertContains "$(stdout 3)" "exit with code:${SIGFPE_CODE} (FPE)" "Emitted expected line of stdout with error code"
     assertContains "$(stdout 4)" "Found corefile at" "Found corefile for given PID"
     assertContains "$(all_lines)" "floating-point-exception.cpp:1" "Found expected line number in backtrace output"
 
