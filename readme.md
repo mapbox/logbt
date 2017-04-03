@@ -70,9 +70,10 @@ This is required on Linux (modifies `/proc/sys/kernel/core_pattern`). Running `l
 
 Common default values for `core_pattern` on linux (which do not work with `logbt`) are:
 
-  - `|/usr/libexec/abrt-hook-ccpp %s %c %p %u %g %t e` Seen on Centos 6
-  - `|/usr/share/apport/apport %p %s %c` Seen on Ubuntu Precise
-  - `|/usr/share/apport/apport %p %s %c %P` Seen on Ubuntu Trusty
+  - `|/usr/libexec/abrt-hook-ccpp %s %c %p %u %g %t e` Seen on Centos 6 (won't work because data is piped to `abrt-hook-ccpp`)
+  - `|/usr/share/apport/apport %p %s %c` Seen on Ubuntu Precise (won't work because data is piped to `apport`)
+  - `|/usr/share/apport/apport %p %s %c %P` Seen on Ubuntu Trusty (won't work because data is piped to `apport`)
+  - `core` Seen on various systems (won't work because `logbt` needs the `pid` and program name in the `core_pattern` on linux)
 
 #### Run logbt
 
