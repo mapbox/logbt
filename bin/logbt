@@ -3,6 +3,7 @@
 set -eu
 set -o pipefail
 # This setting enables the desired behavior in the "for corefile in ${core_directory}/${SEARCH_PATTERN_NON_TRACKED}; do" loop
+# more details at https://gist.github.com/springmeyer/6dd234ff89ba306a73608a6f45cb5506
 shopt -s nullglob
 
 PLATFORM_UNAME=$(uname -s)
