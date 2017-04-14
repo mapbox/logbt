@@ -2,6 +2,7 @@
 
 set -eu
 set -o pipefail
+# This setting enables the desired behavior in the "for corefile in ${core_directory}/${SEARCH_PATTERN_NON_TRACKED}; do" loop
 shopt -s nullglob
 
 PLATFORM_UNAME=$(uname -s)
@@ -56,6 +57,7 @@ function find_core_by_pid() {
   else
     local SEARCH_PATTERN_BY_PID="${REQUIRED_FILENAME}.${child_pid}.*"
     local hit=false
+    # note: this for loop depends on the `shopt -s nullglob` above
     for corefile in ${core_directory}/${SEARCH_PATTERN_BY_PID}; do
       echo "[logbt] Found corefile at ${corefile}"
       # extract program name from corefile
