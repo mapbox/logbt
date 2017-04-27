@@ -320,34 +320,49 @@ function setup_logbt() {
 
 function test_logbt() {
   ulimit -c unlimited
-  # note: this will only create a corefile on osx with bash 4.x (not the apple 3.x)
-  # create a program that crashes itself
-  echo '#!/usr/bin/env bash' > /tmp/crasher.sh
+  # First we create a program that crashes itself
+  # We use bash to avoid needing an external dep on some runtime
+
+  # Due to https://github.com/mapbox/logbt/issues/29 we need to copy the bash
+  # exe on OS X to a new location since coredumps are disabled for /bin/bash for
+  # reasons I don't understand
+  if [[ ${PLATFORM_UNAME} == "Darwin" ]]; then
+      # first touch file to create it with writable permissions for this user
+      # such that we can cleanup after
+      # then copy the system bash there
+      cp --no-preserve=all $(which bash) /tmp/tmp-bash
+      chmod +x /tmp/tmp-bash
+      echo '#!/tmp/tmp-bash' > /tmp/crasher.sh
+  else
+    # on linux the default bash is okay
+      echo '#!/usr/bin/env bash' > /tmp/crasher.sh
+  fi
   echo 'kill -SIGSEGV $$' >> /tmp/crasher.sh
   chmod +x /tmp/crasher.sh
   # run it in logbt
   RETURN=0
   ${BASH_SOURCE} -- /tmp/crasher.sh >/tmp/logbt-stdout 2>/tmp/logbt-stderr || RETURN=$?
+  local err_message
   if [[ ${RETURN} != 139 ]] || [[ ! $(cat /tmp/logbt-stdout) =~ "Found corefile at" ]]; then
     cat /tmp/logbt-stdout
     cat /tmp/logbt-stderr
-    error "Expected return code of 139 and a corefile to be generated"
+    err_message="Expected return code of 139 and a corefile to be generated"
   fi
   if [[ ! $(cat /tmp/logbt-stdout) =~ "Found corefile at" ]]; then
     cat /tmp/logbt-stdout
     cat /tmp/logbt-stderr
-    error "Expected a corefile to be generated"
+    err_message="Expected a corefile to be generated"
   fi
-  if [[ ! $(cat /tmp/logbt-stdout) =~ "kill_builtin" ]]; then
-    cat /tmp/logbt-stdout
-    cat /tmp/logbt-stderr
-    error "Expected stdout to contain 'kill_builtin'"
-  fi
-  echo "[logbt] test success (coredumps are working with core pattern: '$(get_core_pattern)')"
   # cleanup
-  rm /tmp/logbt-stderr
-  rm /tmp/logbt-stdout
-  rm /tmp/crasher.sh
+  rm -f /tmp/logbt-stderr
+  rm -f /tmp/logbt-stdout
+  rm -f /tmp/crasher.sh
+  rm -f /tmp/tmp-bash
+  if [[ ${err_message} ]]; then
+    error ${err_message}
+  else
+    echo "[logbt] test success (coredumps are working with core pattern: '$(get_core_pattern)')"
+  fi
 }
 
 function usage() {
