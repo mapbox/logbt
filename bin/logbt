@@ -358,7 +358,7 @@ function test_logbt() {
   rm -f /tmp/logbt-stdout
   rm -f /tmp/crasher.sh
   rm -f /tmp/tmp-bash
-  if [[ ${err_message} ]]; then
+  if [[ ${err_message:-} ]]; then
     error ${err_message}
   else
     echo "[logbt] test success (coredumps are working with core pattern: '$(get_core_pattern)')"
