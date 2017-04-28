@@ -1,3 +1,7 @@
+# v2.0.2
+
+ - Fixed the `logbt --test` command to work on OS X
+
 # v2.0.1
 
  - Now attempts to display coredumps for all exit codes. This is important for detecting coredumps

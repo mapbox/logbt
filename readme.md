@@ -41,7 +41,7 @@ Recommended install of lldb on OS X is to get latest XCode.
 To install `logbt` to `/usr/local/bin`:
 
 ```sh
-curl -sSfL https://github.com/mapbox/logbt/archive/v2.0.1.tar.gz | tar --gunzip --extract --strip-components=1 --exclude="*md" --exclude="test*" --directory=/usr/local
+curl -sSfL https://github.com/mapbox/logbt/archive/v2.0.2.tar.gz | tar --gunzip --extract --strip-components=1 --exclude="*md" --exclude="test*" --directory=/usr/local
 which logbt
 /usr/local/bin/logbt
 logbt --version
@@ -50,7 +50,7 @@ logbt --version
 Locally (perhaps if your user cannot write to `/usr/local`):
 
 ```sh
-curl -sSfL https://github.com/mapbox/logbt/archive/v2.0.1.tar.gz | tar --gunzip --extract --strip-components=2 --exclude="*md" --exclude="test*" --directory=.
+curl -sSfL https://github.com/mapbox/logbt/archive/v2.0.2.tar.gz | tar --gunzip --extract --strip-components=2 --exclude="*md" --exclude="test*" --directory=.
 ./logbt --version
 ```
 
