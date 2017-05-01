@@ -5,6 +5,14 @@ logbt
 
 Short for "Log Backtrace", this is a bash wrapper for displaying a backtrace when a program crashes.
 
+The goal of `logbt` is to get you get data immediately on why and how a program crashed. When you use `logbt` you will see a detail backtrace instead of the minimal default output from the kernel when a crash happens. So, if you are seeing any one of the following errors, then `logbt` is ready to help you:
+
+ - `Bus error: 10` - SIGBUS
+ - `Segmentation fault: 11` - SIGSEGV
+ - `Abort trap: 6` - SIGABRT
+ - `Illegal instruction: 4` - SIGILL
+ - `Floating point exception: 8` - SIGFPE
+
 The `logbt` command can also:
 
   - Respond to the `USR1` signal and generate a backtrace of a healthy program (which will continue to run)
