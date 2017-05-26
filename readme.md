@@ -5,7 +5,11 @@ logbt
 
 Short for "Log Backtrace", this is a bash wrapper for displaying a backtrace when a program crashes.
 
-The goal of `logbt` is to get you get data immediately on why and how a program crashed. When you use `logbt` you will see a detail backtrace instead of the minimal default output from the kernel when a crash happens. So, if you are seeing any one of the following errors, then `logbt` is ready to help you:
+The goal of `logbt` is to provide immediate feedback on why and how a C/C++ program crashed.
+
+Normally when a C/C++ program crashes the kernel will only print something minimal like `Segmentation fault: 11`. However, with `logbt` you will see a detailed output that includes the exit code and a backtrace that shows the exact [callstack](https://github.com/mapbox/cpp/blob/master/glossary.md#callstack) for the crash.
+
+So, if you are seeing any one of the following errors, then `logbt` is ready to help you:
 
  - `Bus error: 10` - SIGBUS
  - `Segmentation fault: 11` - SIGSEGV
