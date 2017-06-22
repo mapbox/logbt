@@ -1,0 +1,18 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+      - image: mbgl/ci:logbt-2
+    working_directory: /src
+    steps:
+      - checkout
+      - run:
+          name: Version
+          command: bin/logbt --version
+      - run:
+          name: Current Pattern
+          command: bin/logbt --current-pattern
+      - run:
+          name: Test
+          command: bin/logbt --test
