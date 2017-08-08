@@ -140,6 +140,25 @@ This is useful for checking on what the child program is doing for debugging, bu
 
 The `child` must be the program you want snapshotted. While `logbt` supports tracking crashes of any children or grandchildren of the program run by `logbt` the snapshotting will only be done on the direct child.
 
+### Running unit tests
+
+The unit tests additionally depend on:
+
+ - nodejs 4.x
+ - timeout command
+
+On OS X these can be installed and enabled like:
+
+```
+brew install node coreutils || true
+export PATH=$(brew --prefix)/opt/coreutils/libexec/gnubin:${PATH}
+```
+
+They can be run like:
+
+```
+./test/unit.sh
+```
 
 ### Docker considerations
 
