@@ -3,6 +3,24 @@
 set -u
 set -o pipefail
 
+# Assert we have key deps before running tests
+if ! which node > /dev/null; then
+    echo "Could not find required command 'node'"
+    exit 1
+fi
+
+if ! which timeout > /dev/null; then
+    echo "Could not find required command 'timeout'"
+    exit 1
+fi
+
+export CXX=${CXX:-g++}
+
+if ! which ${CXX} > /dev/null; then
+    echo "Could not find required command '${CXX}'"
+    exit 1
+fi
+
 source $(dirname "${BASH_SOURCE[0]}")/utils.sh
 
 export RESULT=0
@@ -10,7 +28,6 @@ export WORKING_DIR="/tmp/logbt-unit-test-outputs"
 export STDOUT_LOGS="./stdout.txt"
 export STDERR_LOGS="./stderr.txt"
 export CXXFLAGS="-g -O0 -DDEBUG"
-export CXX=${CXX:-g++}
 export SIGSEGV_CODE="139"
 export SIGABRT_CODE="134"
 export SIGFPE_CODE="136"
@@ -207,6 +224,7 @@ function main() {
     # background logbt and grab its PID
     ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
     echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    WAIT_BEFORE_SIGNAL=1
     sleep ${WAIT_BEFORE_SIGNAL}
     kill -HUP ${LOGBT_PID}
     RESULT=0
@@ -221,6 +239,7 @@ function main() {
     # background logbt and grab its PID
     ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS} & LOGBT_PID=$!
     echo -e "\033[1m\033[32mok\033[0m - ran ${watcher_command} >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    WAIT_BEFORE_SIGNAL=1
     sleep ${WAIT_BEFORE_SIGNAL}
     kill -TERM ${LOGBT_PID}
     RESULT=0
