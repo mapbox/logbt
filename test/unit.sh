@@ -117,7 +117,7 @@ function main() {
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
     assertContains "$(stdout 3)" "exit with code:${SIGILL_CODE} (ILL)" "Emitted expected line of stdout with error code"
     assertContains "$(stdout 4)" "Found corefile at" "Found corefile for given PID"
-    assertContains "$(all_lines)" "ParseJson" "Found node::Start in backtrace output (from ILL)"
+    assertContains "$(all_lines)" "ParseJson" "Found ParseJson in backtrace output (from ILL)"
 
     exit_early
 
@@ -251,9 +251,8 @@ function main() {
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
     assertEqual "$(stdout 3)" "running custom-node" "Emitted expected first line of stdout"
     assertEqual "$(stdout 4)" "[logbt] saw 'node' exit with code:${SIGSEGV_CODE} (SEGV)" "Emitted expected stdout with exit code"
-    assertContains "$(stdout 5)" "No corefile found at" "No core for direct child"
-    assertContains "$(stdout 6)" "Found corefile (non-tracked) at" "Found corefile by directory search"
-    assertContains "$(stdout 7)" "[logbt] Processing cores..." "Processing cores..."
+    assertContains "$(stdout 5)" "Found corefile (non-tracked) at" "Found corefile by directory search"
+    assertContains "$(stdout 6)" "[logbt] Processing cores..." "Processing cores..."
     assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
 
     exit_early
@@ -266,9 +265,8 @@ function main() {
     assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
     assertEqual "$(stdout 3)" "running custom-script" "Emitted expected first line of stdout"
     assertContains "$(stdout 4)" "exit with code:${SIGSEGV_CODE} (SEGV)" "Emitted expected stdout with exit code"
-    assertContains "$(stdout 5)" "No corefile found at" "No core for direct child"
-    assertContains "$(stdout 6)" "Found corefile (non-tracked) at" "Found corefile by directory search"
-    assertContains "$(stdout 7)" "[logbt] Processing cores..." "Processing cores..."
+    assertContains "$(stdout 5)" "Found corefile (non-tracked) at" "Found corefile by directory search"
+    assertContains "$(stdout 6)" "[logbt] Processing cores..." "Processing cores..."
     assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
 
     # run bash script that runs node, which is killed (as if it OOM'd and was stopped with kill -9)
