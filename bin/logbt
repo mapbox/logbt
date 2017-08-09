@@ -52,12 +52,9 @@ function find_core_by_pid() {
     if [ -e ${single_corefile} ]; then
       echo "[logbt] Found corefile at ${single_corefile}"
       process_core ${program} ${single_corefile} ${debugger}
-    else
-      echo "[logbt] No corefile found at ${single_corefile}"
     fi
   else
     local SEARCH_PATTERN_BY_PID="${REQUIRED_FILENAME}.${child_pid}.*"
-    local hit=false
     # note: this for loop depends on the `shopt -s nullglob` above
     for corefile in ${core_directory}/${SEARCH_PATTERN_BY_PID}; do
       echo "[logbt] Found corefile at ${corefile}"
@@ -65,11 +62,7 @@ function find_core_by_pid() {
       filename=$(basename "${corefile}")
       binary_program=/$(echo ${filename##*.\!} | tr "!" "/")
       process_core ${binary_program} ${corefile} ${debugger}
-      hit=true
     done
-    if [[ ${hit} == false ]]; then
-        echo "[logbt] No corefile found at ${core_directory}/${SEARCH_PATTERN_BY_PID}"
-    fi
   fi  
 }
 
