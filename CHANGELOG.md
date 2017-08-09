@@ -1,3 +1,10 @@
+# logbt changelog
+
+# v2.0.3
+
+ - Stopping logging when no corefile is found, which reduced verbosity of logs (#32)
+ - Various readme and unit test updates.
+
 # v2.0.2
 
  - Fixed the `logbt --test` command to work on OS X

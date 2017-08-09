@@ -8,7 +8,7 @@ shopt -s nullglob
 
 PLATFORM_UNAME=$(uname -s)
 REQUIRED_FILENAME="core"
-LOGBT_VERSION="v2.0.2"
+LOGBT_VERSION="v2.0.3"
 BASE_CORE_DIRECTORY=/tmp/logbt-coredumps
 
 if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
