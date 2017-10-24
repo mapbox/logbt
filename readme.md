@@ -78,7 +78,7 @@ sudo logbt --setup
 
 This command sets the system `core_pattern` to ensure it is ready for `logbt` to use.
 
-This is required on Linux (modifies `/proc/sys/kernel/core_pattern`). Running `logbt --setup` is optional on OS X if the system default for `kern.corefile` is intact (This means on OS X that `$(sysctl -n kern.corefile) == '/cores/core.%P'`)
+This is required on Linux (modifies `/proc/sys/kernel/core_pattern`). Running `logbt --setup` is optional on OS X if the system default for `kern.corefile` is intact (This means on OS X that `$(sysctl -n kern.corefile) == '/cores/core.%P'`). Note, to restore the default on OS X you can run `sudo sysctl kern.corefile=/cores/core.%P`.
 
 Common default values for `core_pattern` on linux (which do not work with `logbt`) are:
 
