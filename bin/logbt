@@ -246,9 +246,9 @@ function launch_and_wait() {
   if [[ ${LD_PRELOAD:-} ]] && [[ ${PLATFORM_UNAME} == 'Darwin' ]]; then
       # on os x DYLD_INSERT_LIBRARIES is blocked from being inherited
       # so we accept LD_PRELOAD and foreward along
-      DYLD_INSERT_LIBRARIES=${LD_PRELOAD} LOGBT_PID=$$ $* & CHILD_PID=$!
+      DYLD_INSERT_LIBRARIES=${LD_PRELOAD} LOGBT_PID=$$ "$@" & CHILD_PID=$!
   else
-      LOGBT_PID=$$ $* & CHILD_PID=$!
+      LOGBT_PID=$$ "$@" & CHILD_PID=$!
   fi
 
   # Hook up function to run when logbt received signal
@@ -398,7 +398,7 @@ case $i in
       usage
     fi
     shift
-    launch_and_wait $@
+    launch_and_wait "$@"
     ;;
     --setup)
     setup_logbt
