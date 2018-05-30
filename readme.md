@@ -105,7 +105,7 @@ Then logbt will run as long as your program runs. If `logbt` your program will b
 
  - `logbt --test`: tests that `logbt` is functioning correctly. Should be run after `logbt --setup`
  - `logbt --current-pattern`: displays the current `core_pattern` value on the system (`/proc/sys/kernel/core_pattern` on linux and `sysctl -n kern.corefile` on OS X)
- - `logbt --target-pattern`: displays the target `core_pattern` value that `logbt --setup` will apply to the system which is `/tmp/logbt-coredumps/core.%p.%e` on linux and `/tmp/logbt-coredumps/core.%P` on OS X)
+ - `logbt --target-pattern`: displays the target `core_pattern` value that `logbt --setup` will apply to the system which is `/tmp/logbt-coredumps/core.%p.%E` on linux and `/tmp/logbt-coredumps/core.%P` on OS X)
  - `logbt --version`: Prints the `logbt` version
  - `logbt --help`: Prints the `logbt` usage help
 
