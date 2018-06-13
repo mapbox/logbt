@@ -7,15 +7,10 @@ Short for "Log Backtrace", this is a bash wrapper for displaying a backtrace whe
 
 The goal of `logbt` is to provide immediate feedback on why and how a C/C++ program crashed.
 
-Normally when a C/C++ program crashes the kernel will only print something minimal like `Segmentation fault: 11`. However, with `logbt` you will see a detailed output that includes the exit code and a backtrace that shows the exact [callstack](https://github.com/mapbox/cpp/blob/master/glossary.md#callstack) for the crash.
+Normally when a C/C++ program crashes the kernel will only print something minimal like `Segmentation fault: 11`. However, with `logbt` you will see a detailed output that includes:
 
-So, if you are seeing any one of the following errors, then `logbt` is ready to help you:
-
- - `Bus error: 10` - SIGBUS
- - `Segmentation fault: 11` - SIGSEGV
- - `Abort trap: 6` - SIGABRT
- - `Illegal instruction: 4` - SIGILL
- - `Floating point exception: 8` - SIGFPE
+ - the exit code of the program printed to stdout (normally the exit code is not visible in logs)
+ - the backtrace that shows the lines of code involved in the crash [aka. the callstack](https://github.com/mapbox/cpp/blob/master/glossary.md#callstack) for the crash
 
 The `logbt` command can also:
 
@@ -23,6 +18,37 @@ The `logbt` command can also:
   - Act as init process (aka "PID1") for docker containers (receives signals and reaps child processes)
   - Automatically clean up coredumps on the system (to avoid your disk filling up)
   - Work on sudo-enabled travis-ci.org machines
+
+### Supported signals
+
+Logbt notices all signals associated with a crash and translates this to more detailed output. For example, without logbt, for a program that segfaults (hits the SIGSEGV signal) you would see `Segmentation fault: 11`. With logbt you would see:
+
+```
+[logbt] saw '<program name' exit with code:139 (SEGV)
+[logbt] Found corefile at /cores/core.<pid>
+<backtrace>
+```
+
+Where:
+
+ - `<program name>` is the name of the program that you launched with `logbt -- <program name>`
+ - `<pid>` is unique program ID that the system assigned that process
+ - `<backtrace>` will be the unique backtrace from `gdb` (on linux) or `lldb` (on osx) that shows what lines of code where executing that lead to the segfault.
+
+These are the signals that `logbt` will report detailed output for:
+
+ - signal `SIGSEGV`, exit code `139`, common name `Segmentation fault`
+ - signal `SIGABRT`, exit code `134`, common name `Segmentation fault`
+ - signal `SIGFPE`, exit code `136`, common name `Floating-point exception`
+ - signal `SIGTERM`, exit code `143`, common name `terminated`
+ - signal `SIGILL`, exit code `132` common name `Illegal instruction`
+ - signal `SIGHUP`, exit code `129`, common name `Hangup`
+ - signal `SIGKILL`, exit code `137`, common name `Killed`
+ - signal `SIGINT`, exit code `130`, common name `Interrupt`
+ - signal `SIGBUS`, exit code `138` (osx) / `135` (linux), common name `Bus error`
+ - signal `SIGUSR1`, exit code `158` (osx) / `128` (linux), common name `User-defined signal 1`
+
+For more info on these signals see <http://man7.org/linux/man-pages/man7/signal.7.html>
 
 ### Upgrading
 
