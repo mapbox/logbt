@@ -37,15 +37,15 @@ Where:
 
 These are the signals that `logbt` will report detailed output for:
 
- - signal `SIGSEGV`, exit code `139`, common name `Segmentation fault`
- - signal `SIGABRT`, exit code `134`, common name `Segmentation fault`
- - signal `SIGFPE`, exit code `136`, common name `Floating-point exception`
+ - signal `SIGSEGV`, exit code `139`, common name `Segmentation fault: 11`
+ - signal `SIGABRT`, exit code `134`, common name `Abort trap: 6`
+ - signal `SIGFPE`, exit code `136`, common name `Floating-point exception: 8`
  - signal `SIGTERM`, exit code `143`, common name `terminated`
- - signal `SIGILL`, exit code `132` common name `Illegal instruction`
+ - signal `SIGILL`, exit code `132` common name `Illegal instruction: 4`
  - signal `SIGHUP`, exit code `129`, common name `Hangup`
  - signal `SIGKILL`, exit code `137`, common name `Killed`
  - signal `SIGINT`, exit code `130`, common name `Interrupt`
- - signal `SIGBUS`, exit code `138` (osx) / `135` (linux), common name `Bus error`
+ - signal `SIGBUS`, exit code `138` (osx) / `135` (linux), common name `Bus error: 10`
  - signal `SIGUSR1`, exit code `158` (osx) / `128` (linux), common name `User-defined signal 1`
 
 For more info on these signals see <http://man7.org/linux/man-pages/man7/signal.7.html>
