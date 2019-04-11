@@ -329,7 +329,7 @@ function test_logbt() {
       # first touch file to create it with writable permissions for this user
       # such that we can cleanup after
       # then copy the system bash there
-      cp --no-preserve=all $(which bash) /tmp/tmp-bash
+      cp $(which bash) /tmp/tmp-bash
       chmod +x /tmp/tmp-bash
       echo '#!/tmp/tmp-bash' > /tmp/crasher.sh
   else
