@@ -240,7 +240,8 @@ function launch_and_wait() {
 
   if [[ ! -d ${core_directory} ]]; then
     echo "[logbt] creating directory for core files at '${core_directory}'"
-    mkdir -p -m a+w ${core_directory}
+    mkdir -p "${core_directory}"
+    chmod a+w "${core_directory}"
   fi
 
   ensure_directory_is_writeable "${core_directory}"
