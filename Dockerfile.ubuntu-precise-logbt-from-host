@@ -20,7 +20,6 @@ RUN curl -sSfL https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o r
 
 # we assume logbt is being mapped to /usr/local/bin from host
 # and that /usr/local/bin is on PATH
-CMD mkdir -p $(dirname $(logbt --target-pattern)) && \
-    logbt --current-pattern --test && \
+CMD logbt --current-pattern --test && \
     export PATH_TO_LOGBT=/usr/local/bin && \
     ./test/unit.sh
