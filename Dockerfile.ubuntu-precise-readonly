@@ -13,7 +13,8 @@ RUN apt-get update -y && \
  . ~/.nvm/nvm.sh && \
  nvm install 4
 
-CMD ./bin/logbt --test && \
+CMD mkdir -p $(dirname $(./bin/logbt --target-pattern)) && \
+    ./bin/logbt --test && \
     . ~/.nvm/nvm.sh && \
     nvm use 4 && \
     ./test/unit.sh
