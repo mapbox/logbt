@@ -28,7 +28,7 @@ else
 fi
 
 function error() {
-  >&2 echo "[logbt] $@"
+  >&2 echo "[logbt] $*"
   exit 1
 }
 
@@ -38,13 +38,13 @@ function process_core() {
   local debugger=${3}
   echo "debug command: ${DEBUGGER_COMMAND}"
   if [[ ${debugger} =~ "lldb" ]]; then
-    lldb --core ${corefile} --batch -o "${DEBUGGER_COMMAND}" -o "quit"
+    lldb --core "${corefile}" --batch -o "${DEBUGGER_COMMAND}" -o "quit"
   else
-    gdb ${program} --core ${corefile} -ex "set pagination 0" -ex "${DEBUGGER_COMMAND}" --batch
+    gdb "${program}" --core "${corefile}" -ex "set pagination 0" -ex "${DEBUGGER_COMMAND}" --batch
   fi
   # note: on OS X the -f avoids a hang on prompt "remove write-protected regular file?"
   if [[ ${KEEP_CORE} == false ]]; then
-    rm -f ${corefile}
+    rm -f "${corefile}"
   fi
 }
 
@@ -55,9 +55,9 @@ function find_core_by_pid() {
   local child_pid=${4}
   if [[ ${PLATFORM_UNAME} == "Darwin" ]]; then
     local single_corefile="${core_directory}/${REQUIRED_FILENAME}.${child_pid}"
-    if [ -e ${single_corefile} ]; then
+    if [ -e "${single_corefile}" ]; then
       echo "[logbt] Found corefile at ${single_corefile}"
-      process_core ${program} ${single_corefile} ${debugger}
+      process_core "${program}" "${single_corefile}" "${debugger}"
     fi
   else
     local SEARCH_PATTERN_BY_PID="${REQUIRED_FILENAME}.${child_pid}.*"
@@ -66,8 +66,8 @@ function find_core_by_pid() {
       echo "[logbt] Found corefile at ${corefile}"
       # extract program name from corefile
       filename=$(basename "${corefile}")
-      binary_program=/$(echo ${filename##*.\!} | tr "!" "/")
-      process_core ${binary_program} ${corefile} ${debugger}
+      binary_program=/$(echo "${filename##*.\!}" | tr "!" "/")
+      process_core "${binary_program}" "${corefile}" "${debugger}"
     done
   fi
 }
@@ -88,8 +88,8 @@ function find_remaining_cores() {
   for corefile in ${core_directory}/${SEARCH_PATTERN_NON_TRACKED}; do
     # below two lines are linux specific, but harmless to run on osx
     filename=$(basename "${corefile}")
-    binary_program=/$(echo ${filename##*.\!} | tr "!" "/")
-    process_core ${binary_program} ${corefile} ${debugger}
+    binary_program=/$(echo "${filename##*.\!}" | tr "!" "/")
+    process_core "${binary_program}" "${corefile}" "${debugger}"
   done
 }
 
@@ -99,9 +99,9 @@ function snapshot {
   local child_pid=${3}
   echo "[logbt] snapshotting ${program} (${child_pid})"
   if [[ ${debugger} =~ "lldb" ]]; then
-    lldb -p ${child_pid} --batch -o "thread backtrace all" -o "quit"
+    lldb -p "${child_pid}" --batch -o "thread backtrace all" -o "quit"
   else
-    gdb --pid ${child_pid} -ex "set pagination 0" -ex "thread apply all bt" --batch
+    gdb --pid "${child_pid}" -ex "set pagination 0" -ex "thread apply all bt" --batch
   fi
 }
 
@@ -110,9 +110,8 @@ function backtrace {
   local core_directory=${2}
   local debugger=${3}
   local child_pid=${4}
-  local child_return=${5}
-  find_core_by_pid ${program} ${core_directory} ${debugger} ${child_pid}
-  find_remaining_cores ${program} ${core_directory} ${debugger}
+  find_core_by_pid "${program}" "${core_directory}" "${debugger}" "${child_pid}"
+  find_remaining_cores "${program}" "${core_directory}" "${debugger}"
 }
 
 function warn_on_existing_cores() {
@@ -135,12 +134,12 @@ function ensure_directory_is_writeable() {
   # ensure we can write to the directory, otherwise
   # core files might not be able to be written
   WRITE_RETURN=0
-  touch ${core_directory}/test.txt || WRITE_RETURN=$?
+  touch "${core_directory}"/test.txt || WRITE_RETURN=$?
   if [[ ${WRITE_RETURN} != 0 ]]; then
     error "Permissions problem: unable to write to ${core_directory} (exited with ${WRITE_RETURN})"
   else
     # cleanup from test
-    rm ${core_directory}/test.txt
+    rm "${core_directory}"/test.txt
   fi
 }
 
@@ -150,14 +149,16 @@ function get_target_core_pattern() {
 
 function get_core_pattern() {
   if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
-    local core_pattern=$(cat /proc/sys/kernel/core_pattern)
+    local core_pattern
+    core_pattern=$(cat /proc/sys/kernel/core_pattern)
   elif [[ ${PLATFORM_UNAME} == "Darwin" ]]; then
     # Recommend running with the following setting to only show crashes
     # in the notification center
     # defaults write com.apple.CrashReporter UseUNC 1
-    local core_pattern=$(sysctl -n kern.corefile)
+    local core_pattern
+    core_pattern=$(sysctl -n kern.corefile)
   fi
-  echo ${core_pattern}
+  echo "${core_pattern}"
 }
 
 function validate_core_pattern() {
@@ -174,7 +175,7 @@ function generic_signal_handler() {
   local sig=${3}
   # Bug note: On darwin ${code} will be incorrectly 0 after snapshot here
   # so we ignore ${code} and instead get it from the signal
-  code=$(($(kill -l ${sig})+128))
+  code=$(($(kill -l "${sig}")+128))
   echo "[logbt] received signal:${code} (${sig})"
   echo "[logbt] sending SIGTERM to ${program} (${child_pid})"
   # sleep here to help the stdout show in the right
@@ -182,12 +183,12 @@ function generic_signal_handler() {
   # the child outputs stdout during shutdown)
   sleep 1
   KILL_RETURN=0
-  kill -TERM ${child_pid} || KILL_RETURN=$?
+  kill -TERM "${child_pid}" || KILL_RETURN=$?
   if [[ ${KILL_RETURN} != 0 ]]; then
     echo "[logbt] could not terminate child process (kill returned ${KILL_RETURN})"
   else
     CHILD_EXIT=0
-    wait ${child_pid} || CHILD_EXIT=$?
+    wait "${child_pid}" || CHILD_EXIT=$?
     if [[ ${CHILD_EXIT} != 143 ]]; then
       error "child process exited abnormally: ${CHILD_EXIT}"
     fi
@@ -213,7 +214,7 @@ function sigint_handler() {
   local sig=${3}
   echo "[logbt] received signal:${code} (${sig})"
   CHILD_EXIT=0
-  wait ${child_pid} || CHILD_EXIT=$?
+  wait "${child_pid}" || CHILD_EXIT=$?
   if [[ ${CHILD_EXIT} != 130 ]]; then
     echo "[logbt] child process exited with:${CHILD_EXIT}"
   fi
@@ -223,15 +224,17 @@ function sigint_handler() {
 function launch_and_wait() {
 
   local program=${1}
-  local core_pattern=$(get_core_pattern)
-  validate_core_pattern ${core_pattern}
+  local core_pattern
+  core_pattern=$(get_core_pattern)
+  validate_core_pattern "${core_pattern}"
 
-  local core_directory=$(dirname ${core_pattern})
+  local core_directory
+  core_directory=$(dirname "${core_pattern}")
   echo "[logbt] using corefile location: ${core_directory}"
-  echo "[logbt] using core_pattern: $(basename ${core_pattern})"
+  echo "[logbt] using core_pattern: $(basename "${core_pattern}")"
 
   # ensure we have a debugger installed
-  if ! which ${DEBUGGER} > /dev/null; then
+  if ! command -v "${DEBUGGER}" > /dev/null; then
     error "Could not find required command '${DEBUGGER}'"
   fi
 
@@ -239,16 +242,16 @@ function launch_and_wait() {
     error "Error: directory expected for core files at '${core_directory}', please run --setup command to create"
   fi
 
-  ensure_directory_is_writeable ${core_directory}
+  ensure_directory_is_writeable "${core_directory}"
 
-  warn_on_existing_cores ${core_directory}
+  warn_on_existing_cores "${core_directory}"
 
   # Enable corefile generation
   ulimit -c unlimited
 
   # Run the child process in a background process
   # in order to get the PID
-  if [[ ${LD_PRELOAD:-} ]] && [[ ${PLATFORM_UNAME} == 'Darwin' ]]; then
+  if [[ -n "${LD_PRELOAD:-}" ]] && [[ "${PLATFORM_UNAME}" == 'Darwin' ]]; then
       # on os x DYLD_INSERT_LIBRARIES is blocked from being inherited
       # so we accept LD_PRELOAD and foreward along
       DYLD_INSERT_LIBRARIES=${LD_PRELOAD} LOGBT_PID=$$ "$@" & CHILD_PID=$!
@@ -263,7 +266,7 @@ function launch_and_wait() {
   trap "sigint_handler ${program} ${CHILD_PID} INT" INT
 
   # Wait for child and attempt to generate a backtrace if child exits in non-zero way
-  wait_for_child ${program} ${core_directory} ${DEBUGGER} ${CHILD_PID}
+  wait_for_child "${program}" "${core_directory}" "${DEBUGGER}" "${CHILD_PID}"
 }
 
 function wait_for_child() {
@@ -272,7 +275,7 @@ function wait_for_child() {
   local debugger=${3}
   local child_pid=${4}
   CHILD_RETURN=0
-  wait ${child_pid} || CHILD_RETURN=$?
+  wait "${child_pid}" || CHILD_RETURN=$?
   if [[ ${CHILD_RETURN} == 127 ]]; then
     # command not found : http://www.tldp.org/LDP/abs/html/exitcodes.html
     echo "[logbt] command not found: ${program}"
@@ -281,38 +284,41 @@ function wait_for_child() {
     # has returned when it has not. So the below code ensures we stay alive in order to watch
     # the child for when USR1 is hit
     if [[ $(kill -l ${CHILD_RETURN}) == USR1 ]]; then
-      wait_for_child ${program} ${core_directory} ${debugger} ${child_pid}
+      wait_for_child "${program}" "${core_directory}" "${debugger}" "${child_pid}"
     fi
     local exit_msg="saw '${program}' exit with code:${CHILD_RETURN}"
     exit_msg="${exit_msg} ($(kill -l ${CHILD_RETURN}))"
     echo "[logbt] ${exit_msg}"
-    backtrace ${program} ${core_directory} ${DEBUGGER} ${child_pid} ${CHILD_RETURN}
+    backtrace "${program}" "${core_directory}" "${DEBUGGER}" "${child_pid}" "${CHILD_RETURN}"
   fi
   # exit logbt with the same code as the child
   exit ${CHILD_RETURN}
 }
 
 function setup_logbt() {
-  local settable_core_pattern=$(get_target_core_pattern)
+  local settable_core_pattern
+  settable_core_pattern=$(get_target_core_pattern)
   if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
     echo "[logbt] setting $(cat /proc/sys/kernel/core_pattern) -> ${settable_core_pattern}"
     # write new value to /proc/sys/kernel/core_pattern
     echo "${settable_core_pattern}" > /proc/sys/kernel/core_pattern
   elif [[ ${PLATFORM_UNAME} == "Darwin" ]]; then
     echo "[logbt] setting $(sysctl -n kern.corefile) -> ${settable_core_pattern}"
-    sysctl kern.corefile=${settable_core_pattern}
+    sysctl kern.corefile="${settable_core_pattern}"
   fi
 
-  local core_pattern=$(get_core_pattern)
-  validate_core_pattern ${core_pattern}
-  local core_directory=$(dirname ${core_pattern})
+  local core_pattern
+  core_pattern=$(get_core_pattern)
+  validate_core_pattern "${core_pattern}"
+  local core_directory
+  core_directory=$(dirname "${core_pattern}")
 
   if [[ ! -d ${core_directory} ]]; then
     echo "[logbt] creating directory for core files at '${core_directory}'"
-    mkdir -p -m a+w ${core_directory}
+    mkdir -p -m a+w "${core_directory}"
   fi
 
-  error_on_existing_cores ${core_directory}
+  error_on_existing_cores "${core_directory}"
 
 }
 
@@ -336,7 +342,7 @@ function test_logbt() {
       # first touch file to create it with writable permissions for this user
       # such that we can cleanup after
       # then copy the system bash there
-      cp $(which bash) /tmp/tmp-bash
+      cp "$(command -v bash)" /tmp/tmp-bash
       chmod +x /tmp/tmp-bash
       echo '#!/tmp/tmp-bash' > /tmp/crasher.sh
   else
@@ -347,7 +353,7 @@ function test_logbt() {
   chmod +x /tmp/crasher.sh
   # run it in logbt
   RETURN=0
-  ${BASH_SOURCE} -- /tmp/crasher.sh >/tmp/logbt-stdout 2>/tmp/logbt-stderr || RETURN=$?
+  "${BASH_SOURCE[0]}" -- /tmp/crasher.sh >/tmp/logbt-stdout 2>/tmp/logbt-stderr || RETURN=$?
   local err_message
   if [[ ${RETURN} != 139 ]] || [[ ! $(cat /tmp/logbt-stdout) =~ "Found corefile at" ]]; then
     cat /tmp/logbt-stdout
@@ -364,8 +370,8 @@ function test_logbt() {
   rm -f /tmp/logbt-stdout
   rm -f /tmp/crasher.sh
   rm -f /tmp/tmp-bash
-  if [[ ${err_message:-} ]]; then
-    error ${err_message}
+  if [[ -n ${err_message:-} ]]; then
+    error "${err_message}"
   else
     echo "[logbt] test success (coredumps are working with core pattern: '$(get_core_pattern)')"
   fi
@@ -399,7 +405,7 @@ function get_version() {
   echo ${LOGBT_VERSION}
 }
 
-if [[ ! ${1:-} ]]; then
+if [[ -z ${1:-} ]]; then
   usage
 fi
 
@@ -408,7 +414,7 @@ for i in "$@"
 do
 case $i in
     --)
-    if [[ ! ${2:-} ]]; then
+    if [[ -z ${2:-} ]]; then
       usage
     fi
     shift
@@ -423,7 +429,7 @@ case $i in
     shift
     ;;
     --debug-command)
-    if [[ ! ${2:-} ]]; then
+    if [[ -z ${2:-} ]]; then
       usage
     fi
     shift
