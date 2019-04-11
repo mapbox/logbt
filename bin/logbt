@@ -10,6 +10,7 @@ PLATFORM_UNAME=$(uname -s)
 REQUIRED_FILENAME="core"
 LOGBT_VERSION="v2.0.3"
 BASE_CORE_DIRECTORY=/tmp/logbt-coredumps
+KEEP_CORE=false
 
 if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
   REQUIRED_PATTERN="${REQUIRED_FILENAME}.%p.%E"
@@ -39,7 +40,9 @@ function process_core() {
     gdb ${program} --core ${corefile} -ex "set pagination 0" -ex "thread apply all bt" --batch
   fi
   # note: on OS X the -f avoids a hang on prompt "remove write-protected regular file?"
-  rm -f ${corefile}
+  if [[ ${KEEP_CORE} == false ]]; then
+    rm -f ${corefile}
+  fi
 }
 
 function find_core_by_pid() {
@@ -310,6 +313,10 @@ function setup_logbt() {
 
 }
 
+function keep_core() {
+  KEEP_CORE=true
+}
+
 function test_logbt() {
   ulimit -c unlimited
   # First we create a program that crashes itself
@@ -401,6 +408,10 @@ case $i in
     ;;
     --setup)
     setup_logbt
+    shift
+    ;;
+    --keep-core)
+    keep_core
     shift
     ;;
     --test)

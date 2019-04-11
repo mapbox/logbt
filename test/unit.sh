@@ -109,17 +109,6 @@ function main() {
 
     exit_early
 
-    # test killing logbt from child
-    export RESULT=0
-    run_test node -e "process.kill(process.env.LOGBT_PID,'SIGINT')"
-    assertEqual "${RESULT}" "${SIGINT_CODE}" "emitted expected signal send from child"
-    assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message"
-    assertContains "$(stdout 2)" "${EXPECTED_STARTUP_MESSAGE2}" "Expected startup message"
-    assertContains "$(stdout 3)" "received signal:${SIGINT_CODE} (INT)" "Emitted expected line of stdout with error code"
-    assertContains "$(stdout 4)" "child process exited with:0" "Child exited fine"
-
-    exit_early
-
     # test when an invalid command is passed to logbt
     export RESULT=0
     ${PATH_TO_LOGBT}/logbt -- doesnotexist >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
@@ -259,6 +248,22 @@ function main() {
     assertEqual "$(stdout 4)" "[logbt] saw 'test/segfault.js' exit with code:${SIGSEGV_CODE} (SEGV)" "Emitted expected stdout with exit code"
     assertContains "$(stdout 5)" "Found corefile at" "Found corefile for given PID"
     assertContains "$(all_lines)" "node::Kill(v8::FunctionCallbackInfo<v8::Value> const&)" "Found expected line number in backtrace output"
+
+    exit_early
+
+    # test that keeping core works
+    # first get corefile directory
+    COREFILE_DIR_LOCATION=$(dirname $(${PATH_TO_LOGBT}/logbt --current-pattern))
+    CURRENT_COUNT=$(find $COREFILE_DIR_LOCATION | wc -l)
+    RESULT=0
+    ${PATH_TO_LOGBT}/logbt --keep-core -- node test/segfault.js >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    echo -e "\033[1m\033[32mok\033[0m - ran ${PATH_TO_LOGBT}/logbt --keep-core -- node test/segfault.js >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
+    NEW_COUNT=$(find $COREFILE_DIR_LOCATION | wc -l)
+    assertEqual "${NEW_COUNT}" $((${CURRENT_COUNT} + 1)) "Added new file to core directory"
+
+    # then re-run command to clear corefiles
+    run_test test/segfault.js
 
     exit_early
 
