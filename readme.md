@@ -134,7 +134,8 @@ Then logbt will run as long as your program runs. If `logbt` your program will b
  - `logbt --target-pattern`: displays the target `core_pattern` value that `logbt --setup` will apply to the system which is `/tmp/logbt-coredumps/core.%p.%E` on linux and `/tmp/logbt-coredumps/core.%P` on OS X)
  - `logbt --version`: Prints the `logbt` version
  - `logbt --help`: Prints the `logbt` usage help
-
+ - `logbt --keep-core`: The default behavior of logbt is to clear all corefiles found in the core directory listed by the `core_pattern`. Passing this option modifies this behavior such that the corefiles are kept and not deleted
+ - `logbt --debug-command "<command>"`: The default command sent to `gdb` (on linux) is `thread apply all bt` and `lldb` (on OS X) is `thread backtrace all`, respectively. If you pass this argument, which should be quoted, then you can customize what is sent. For example if you want full backtraces from gdb you could pass `logbt --debug-command "thread apply all bt full"`
 ### Snapshotting
 
 A experimental feature of `logbt` >= 2.x is the ability to send a `USR1` signal and to generate backtrace of the healthy child program.
