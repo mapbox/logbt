@@ -267,16 +267,16 @@ function wait_for_child() {
   local child_pid=${4}
   CHILD_RETURN=0
   wait ${child_pid} || CHILD_RETURN=$?
-  # On linux (and recent OS X) USR1 will trigger an exit which makes it look like the child
-  # has returned when it has not. So the below code ensures we stay alive in order to watch
-  # the child for when USR1 is hit
-  if [[ $(kill -l ${CHILD_RETURN}) == USR1 ]]; then
-    wait_for_child ${program} ${core_directory} ${debugger} ${child_pid}
-  fi
   if [[ ${CHILD_RETURN} == 127 ]]; then
     # command not found : http://www.tldp.org/LDP/abs/html/exitcodes.html
     echo "[logbt] command not found: ${program}"
   elif [[ ${CHILD_RETURN} != 0 ]]; then
+    # On linux (and recent OS X) USR1 will trigger an exit which makes it look like the child
+    # has returned when it has not. So the below code ensures we stay alive in order to watch
+    # the child for when USR1 is hit
+    if [[ $(kill -l ${CHILD_RETURN}) == USR1 ]]; then
+      wait_for_child ${program} ${core_directory} ${debugger} ${child_pid}
+    fi
     local exit_msg="saw '${program}' exit with code:${CHILD_RETURN}"
     exit_msg="${exit_msg} ($(kill -l ${CHILD_RETURN}))"
     echo "[logbt] ${exit_msg}"
