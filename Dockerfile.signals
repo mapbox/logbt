@@ -21,4 +21,4 @@ RUN cat /proc/sys/kernel/core_pattern
 
 ENTRYPOINT ["./bin/logbt", "--setup", "--" ]
 
-CMD ["node test/wait.js 1000"]
+CMD ["node","test/wait.js","1000"]
