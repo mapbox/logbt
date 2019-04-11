@@ -24,7 +24,7 @@ elif [[ ${PLATFORM_UNAME} == "Darwin" ]]; then
   DEBUGGER="lldb"
   DEBUGGER_COMMAND="thread backtrace all"
 else
-  error "Unsupported platform: ${PLATFORM_UNAME}"
+  error "Error: Unsupported platform: ${PLATFORM_UNAME}"
 fi
 
 function error() {
@@ -136,7 +136,7 @@ function ensure_directory_is_writeable() {
   WRITE_RETURN=0
   touch "${core_directory}"/test.txt || WRITE_RETURN=$?
   if [[ ${WRITE_RETURN} != 0 ]]; then
-    error "Permissions problem: unable to write to ${core_directory} (exited with ${WRITE_RETURN})"
+    error "Error: Permissions problem: unable to write to ${core_directory} (exited with ${WRITE_RETURN})"
   else
     # cleanup from test
     rm "${core_directory}"/test.txt
@@ -164,7 +164,7 @@ function get_core_pattern() {
 function validate_core_pattern() {
   local core_pattern=${1}
   if [[ ! ${core_pattern} =~ ${REQUIRED_PATTERN} ]]; then
-    error "unexpected core_pattern: ${core_pattern}"
+    error "Error: unexpected core_pattern: ${core_pattern}"
   fi
 }
 
@@ -190,7 +190,7 @@ function generic_signal_handler() {
     CHILD_EXIT=0
     wait "${child_pid}" || CHILD_EXIT=$?
     if [[ ${CHILD_EXIT} != 143 ]]; then
-      error "child process exited abnormally: ${CHILD_EXIT}"
+      error "Error: child process exited abnormally: ${CHILD_EXIT}"
     fi
   fi
   echo "[logbt] exiting with ${code}"
@@ -235,13 +235,17 @@ function launch_and_wait() {
 
   # ensure we have a debugger installed
   if ! command -v "${DEBUGGER}" > /dev/null; then
-    error "Could not find required command '${DEBUGGER}'"
+    error "Error: Could not find required command '${DEBUGGER}'"
   fi
 
   if [[ ! -d ${core_directory} ]]; then
-    echo "[logbt] creating directory for core files at '${core_directory}'"
-    mkdir -p "${core_directory}"
-    chmod a+w "${core_directory}"
+    if [[ ${PLATFORM_UNAME} == "Darwin" ]] && [[ ${core_directory} =~ "/cores" ]]; then
+      error "Error: directory expected for core files at '${core_directory}', please run --setup command or manually create /cores"
+    else
+      echo "[logbt] creating directory for core files at '${core_directory}'"
+      mkdir -p "${core_directory}"
+      chmod a+w "${core_directory}"
+    fi
   fi
 
   ensure_directory_is_writeable "${core_directory}"
@@ -374,7 +378,7 @@ function test_logbt() {
   rm -f /tmp/crasher.sh
   rm -f /tmp/tmp-bash
   if [[ -n ${err_message:-} ]]; then
-    error "${err_message}"
+    error "Error: ${err_message}"
   else
     echo "[logbt] test success (coredumps are working with core pattern: '$(get_core_pattern)')"
   fi
