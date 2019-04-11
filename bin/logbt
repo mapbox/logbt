@@ -315,7 +315,8 @@ function setup_logbt() {
 
   if [[ ! -d ${core_directory} ]]; then
     echo "[logbt] creating directory for core files at '${core_directory}'"
-    mkdir -p -m a+w "${core_directory}"
+    mkdir -p "${core_directory}"
+    chmod -m a+w "${core_directory}"
   fi
 
   error_on_existing_cores "${core_directory}"
