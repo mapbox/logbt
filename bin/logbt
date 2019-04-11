@@ -230,8 +230,7 @@ function launch_and_wait() {
   fi
 
   if [[ ! -d ${core_directory} ]]; then
-    echo "[logbt] creating directory for core files at '${core_directory}'"
-    mkdir -p -m a+w ${core_directory}
+    error "Error: directory expected for core files at '${core_directory}', please run --setup command to create"
   fi
 
   ensure_directory_is_writeable ${core_directory}
