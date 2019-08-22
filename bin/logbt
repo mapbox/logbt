@@ -12,6 +12,7 @@ LOGBT_VERSION="v2.0.3"
 BASE_CORE_DIRECTORY=/tmp/logbt-coredumps
 KEEP_CORE=false
 
+
 if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
   REQUIRED_PATTERN="${REQUIRED_FILENAME}.%p.%E"
   DEBUGGER="gdb"
@@ -130,19 +131,6 @@ function error_on_existing_cores() {
   done
 }
 
-function ensure_directory_is_writeable() {
-  # ensure we can write to the directory, otherwise
-  # core files might not be able to be written
-  WRITE_RETURN=0
-  touch "${core_directory}"/test.txt || WRITE_RETURN=$?
-  if [[ ${WRITE_RETURN} != 0 ]]; then
-    error "Error: Permissions problem: unable to write to ${core_directory} (exited with ${WRITE_RETURN})"
-  else
-    # cleanup from test
-    rm "${core_directory}"/test.txt
-  fi
-}
-
 function get_target_core_pattern() {
   echo ${BASE_CORE_DIRECTORY}/${REQUIRED_PATTERN}
 }
@@ -247,8 +235,6 @@ function launch_and_wait() {
       chmod a+w "${core_directory}"
     fi
   fi
-
-  ensure_directory_is_writeable "${core_directory}"
 
   warn_on_existing_cores "${core_directory}"
 
