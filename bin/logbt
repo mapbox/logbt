@@ -339,6 +339,9 @@ function set_debug_command() {
 }
 
 function test_logbt() {
+  if [[ ${READ_ONLY_MODE} == true ]]; then
+    error "Error: --test and --read-only-mode cannot be used together"
+  fi
   ulimit -c unlimited
   # First we create a program that crashes itself
   # We use bash to avoid needing an external dep on some runtime
