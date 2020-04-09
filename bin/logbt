@@ -40,7 +40,7 @@ function process_core() {
   if [[ ${debugger} =~ "lldb" ]]; then
     lldb --core "${corefile}" --batch -o "${DEBUGGER_COMMAND}" -o "quit"
   else
-    gdb "${program}" --core "${corefile}" -ex "set pagination 0" -ex "${DEBUGGER_COMMAND}" --batch
+    gdb "${program}" --core "${corefile}" -ex "set print thread-events off" -ex "set pagination 0" -ex "${DEBUGGER_COMMAND}" --batch
   fi
   # note: on OS X the -f avoids a hang on prompt "remove write-protected regular file?"
   if [[ ${KEEP_CORE} == false ]]; then
