@@ -256,8 +256,8 @@ function main() {
     COREFILE_DIR_LOCATION=$(dirname $(${PATH_TO_LOGBT}/logbt --current-pattern))
     CURRENT_COUNT=$(find $COREFILE_DIR_LOCATION | wc -l)
     RESULT=0
-    ${PATH_TO_LOGBT}/logbt --keep-core -- node test/segfault.js >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
-    echo -e "\033[1m\033[32mok\033[0m - ran ${PATH_TO_LOGBT}/logbt --keep-core -- node test/segfault.js >${STDOUT_LOGS} 2>${STDERR_LOGS}"
+    ${PATH_TO_LOGBT}/logbt --read-only-mode -- node test/segfault.js >${STDOUT_LOGS} 2>${STDERR_LOGS} || export RESULT=$?
+    echo -e "\033[1m\033[32mok\033[0m - ran ${PATH_TO_LOGBT}/logbt --read-only-mode -- node test/segfault.js >${STDOUT_LOGS} 2>${STDERR_LOGS}"
     assertEqual "${RESULT}" "${SIGSEGV_CODE}" "emitted expected signal"
     NEW_COUNT=$(find $COREFILE_DIR_LOCATION | wc -l)
     assertEqual "${NEW_COUNT}" $((${CURRENT_COUNT} + 1)) "Added new file to core directory"

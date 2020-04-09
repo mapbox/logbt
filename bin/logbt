@@ -10,7 +10,8 @@ PLATFORM_UNAME=$(uname -s)
 REQUIRED_FILENAME="core"
 LOGBT_VERSION="v2.0.3"
 BASE_CORE_DIRECTORY=/tmp/logbt-coredumps
-KEEP_CORE=false
+READ_ONLY_MODE=false
+STRICT_MODE=false
 
 if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
   REQUIRED_PATTERN="${REQUIRED_FILENAME}.%p.%E"
@@ -43,7 +44,7 @@ function process_core() {
     gdb "${program}" --core "${corefile}" -ex "set print thread-events off" -ex "set pagination 0" -ex "${DEBUGGER_COMMAND}" --batch
   fi
   # note: on OS X the -f avoids a hang on prompt "remove write-protected regular file?"
-  if [[ ${KEEP_CORE} == false ]]; then
+  if [[ ${READ_ONLY_MODE} == false ]]; then
     rm -f "${corefile}"
   fi
 }
@@ -126,7 +127,11 @@ function error_on_existing_cores() {
   local core_directory=${1}
   local SEARCH_PATTERN_NON_TRACKED="${REQUIRED_FILENAME}.*"
   for corefile in ${core_directory}/${SEARCH_PATTERN_NON_TRACKED}; do
-    error "Error: Found corefile (unexpected) at ${corefile}"
+    if [[ ${STRICT_MODE} == true ]]; then
+      error "Error: Found corefile (unexpected) at ${corefile}"
+    else
+      echo "[logbt] WARNING: Found corefile (unexpected) at ${corefile}"
+    fi
   done
 }
 
@@ -164,7 +169,12 @@ function get_core_pattern() {
 function validate_core_pattern() {
   local core_pattern=${1}
   if [[ ! ${core_pattern} =~ ${REQUIRED_PATTERN} ]]; then
-    error "Error: unexpected core_pattern: ${core_pattern}"
+    if [[ ${STRICT_MODE} == true ]]; then
+      error "Error: unexpected core_pattern: ${core_pattern}"
+    else
+      echo "[logbt] WARNING: unexpected core_pattern: ${core_pattern}"
+    fi
+
   fi
 }
 
@@ -238,17 +248,15 @@ function launch_and_wait() {
     error "Error: Could not find required command '${DEBUGGER}'"
   fi
 
-  if [[ ! -d ${core_directory} ]]; then
-    if [[ ${PLATFORM_UNAME} == "Darwin" ]] && [[ ${core_directory} =~ "/cores" ]]; then
-      error "Error: directory expected for core files at '${core_directory}', please run --setup command or manually create /cores"
-    else
-      echo "[logbt] creating directory for core files at '${core_directory}'"
-      mkdir -p "${core_directory}"
-      chmod a+w "${core_directory}"
-    fi
+  if [[ ! -d ${core_directory} ]] && [[ ${READ_ONLY_MODE} == false ]]; then
+    echo "[logbt] creating directory for core files at '${core_directory}'"
+    mkdir -p "${core_directory}"
+    chmod a+w "${core_directory}"
   fi
 
-  ensure_directory_is_writeable "${core_directory}"
+  if [[ ${READ_ONLY_MODE} == false ]]; then
+    ensure_directory_is_writeable "${core_directory}"
+  fi
 
   warn_on_existing_cores "${core_directory}"
 
@@ -302,6 +310,9 @@ function wait_for_child() {
 }
 
 function setup_logbt() {
+  if [[ ${READ_ONLY_MODE} == true ]]; then
+    error "Error: --setup and --read-only-mode cannot be used together"
+  fi
   local settable_core_pattern
   settable_core_pattern=$(get_target_core_pattern)
   if [[ ${PLATFORM_UNAME} == "Linux" ]]; then
@@ -329,8 +340,12 @@ function setup_logbt() {
 
 }
 
-function keep_core() {
-  KEEP_CORE=true
+function set_read_only_mode() {
+  READ_ONLY_MODE=true
+}
+
+function set_strict_mode() {
+  STRICT_MODE=true
 }
 
 function set_debug_command() {
@@ -338,6 +353,9 @@ function set_debug_command() {
 }
 
 function test_logbt() {
+  if [[ ${READ_ONLY_MODE} == true ]]; then
+    error "Error: --test and --read-only-mode cannot be used together"
+  fi
   ulimit -c unlimited
   # First we create a program that crashes itself
   # We use bash to avoid needing an external dep on some runtime
@@ -403,7 +421,7 @@ function usage() {
   >&2 echo ""
   >&2 echo " --current-pattern"
   >&2 echo " --target-pattern"
-  >&2 echo " --keep-core"
+  >&2 echo " --read-only-mode"
   >&2 echo " --debug-command \"thread apply all bt full\""
   exit 1
 }
@@ -427,12 +445,16 @@ case $i in
     shift
     launch_and_wait "$@"
     ;;
-    --setup)
-    setup_logbt
+    --strict-mode)
+    set_strict_mode
     shift
     ;;
-    --keep-core)
-    keep_core
+    --read-only-mode)
+    set_read_only_mode
+    shift
+    ;;
+    --setup)
+    setup_logbt
     shift
     ;;
     --debug-command)

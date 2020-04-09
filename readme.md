@@ -33,7 +33,7 @@ Where:
 
  - `<program name>` is the name of the program that you launched with `logbt -- <program name>`
  - `<pid>` is unique program ID that the system assigned that process
- - `<backtrace>` will be the unique backtrace from `gdb` (on linux) or `lldb` (on osx) that shows what lines of code where executing that lead to the segfault.
+ - `<backtrace>` will be the unique backtrace from `gdb` (on linux) or `lldb` (on os x) that shows what lines of code were executing that lead to the segfault.
 
 These are the signals that `logbt` will report detailed output for:
 
@@ -45,8 +45,8 @@ These are the signals that `logbt` will report detailed output for:
  - signal `SIGHUP`, exit code `129`, common name `Hangup`
  - signal `SIGKILL`, exit code `137`, common name `Killed`
  - signal `SIGINT`, exit code `130`, common name `Interrupt`
- - signal `SIGBUS`, exit code `138` (osx) / `135` (linux), common name `Bus error: 10`
- - signal `SIGUSR1`, exit code `158` (osx) / `128` (linux), common name `User-defined signal 1`
+ - signal `SIGBUS`, exit code `138` (os x) / `135` (linux), common name `Bus error: 10`
+ - signal `SIGUSR1`, exit code `158` (os x) / `128` (linux), common name `User-defined signal 1`
 
 For more info on these signals see <http://man7.org/linux/man-pages/man7/signal.7.html>
 
@@ -109,7 +109,7 @@ This is required on Linux (modifies `/proc/sys/kernel/core_pattern`).
 Running `logbt --setup` is optional on OS X if these conditions are met:
 
  - The system default for `kern.corefile` is intact (This means on OS X that `$(sysctl -n kern.corefile) == '/cores/core.%P'`)
- - The /cores directory exists and is writeable by normal users. This can be accomplished by doing `sudo mkdir /cores && sudo chmod a+w`
+ - The /cores directory exists and is writeable by normal users. This can be accomplished by doing `sudo mkdir -p /cores && sudo chmod a+w /cores/`
 
 Note, to restore the default on OS X you can run `sudo sysctl kern.corefile=/cores/core.%P`.
 
