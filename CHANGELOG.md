@@ -1,5 +1,10 @@
 # logbt changelog
 
+# v3.0.0
+ - On linux, now passing `print thread-events off` to gbd to avoid seeing noisy thread events
+ - Removed `--keep-core`. Now we have a dedicated `--read-only-mode` (default false, needs to write to ensure core file directory is created) that will keep cores and well as not need write permissions in general (since it does not attempt to validate that the core file directory exists - you'll need it there already)
+ - Added `--strict-mode` option (default false if not passed). If true then logbt will error if an unexpected core file is found during startup or if an unexpected core pattern is encountered. Without this option it will not error and will continue and do its best to function without these safeguards
+
 # v2.0.3
 
  - Stopping logging when no corefile is found, which reduced verbosity of logs (#32)

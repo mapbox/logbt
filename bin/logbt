@@ -8,7 +8,7 @@ shopt -s nullglob
 
 PLATFORM_UNAME=$(uname -s)
 REQUIRED_FILENAME="core"
-LOGBT_VERSION="v2.0.3"
+LOGBT_VERSION="v3.0.0"
 BASE_CORE_DIRECTORY=/tmp/logbt-coredumps
 READ_ONLY_MODE=false
 STRICT_MODE=false
