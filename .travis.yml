@@ -64,7 +64,7 @@ matrix:
       dist: trusty
       sudo: required
       script:
-        - docker build -t logbt-precise1 -f Dockerfile.ubuntu-precise-writable-proc .
+        - docker build -t logbt-precise1 -f Dockerfile.writable-proc .
         - docker run --cap-add SYS_PTRACE --volume /proc:/writable-proc logbt-precise1
         - cat /proc/sys/kernel/core_pattern
     - os: linux
@@ -72,7 +72,7 @@ matrix:
       dist: trusty
       sudo: required
       script:
-        - docker build -t logbt-precise2 -f Dockerfile.ubuntu-precise-readonly .
+        - docker build -t logbt-precise2 -f Dockerfile.readonly .
         - sudo ./bin/logbt --setup
         - docker run --cap-add SYS_PTRACE logbt-precise2
         - cat /proc/sys/kernel/core_pattern
@@ -81,7 +81,7 @@ matrix:
       dist: trusty
       sudo: required
       script:
-        - docker build -t logbt-precise3 -f Dockerfile.ubuntu-precise .
+        - docker build -t logbt-precise3 -f Dockerfile .
         - docker run --privileged logbt-precise3
         - cat /proc/sys/kernel/core_pattern
     - os: linux
@@ -89,7 +89,7 @@ matrix:
       dist: trusty
       sudo: required
       script:
-        - docker build -t logbt-precise4 -f Dockerfile.ubuntu-precise-logbt-from-host .
+        - docker build -t logbt-precise4 -f Dockerfile.logbt-from-host .
         - sudo ./bin/logbt --setup
         - docker run --cap-add SYS_PTRACE -v $(pwd)/bin/logbt:/usr/local/bin/logbt logbt-precise4
     - os: linux

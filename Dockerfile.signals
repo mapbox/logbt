@@ -1,4 +1,4 @@
-FROM ubuntu:14.04
+FROM ubuntu:18.04
 
 # docker build -t logbt-signals -f Dockerfile.signals .
 # docker run --detach --privileged -it --rm --name="logbt-signals" logbt-signals
@@ -10,12 +10,14 @@ ENV WORKINGDIR /usr/local/src
 WORKDIR ${WORKINGDIR}
 COPY bin/logbt bin/logbt
 COPY test test
+ADD .nvmrc ./
 RUN apt-get update -y && \
  apt-get install -y bash curl gdb git-core g++ ca-certificates --no-install-recommends
 
-RUN curl -sSfL https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o run && \
-  chmod +x ./run && \
-  NV=4.4.3 NP=$(uname | tr A-Z a-z)-x64 OD=/usr/local ./run
+RUN NODE_SLUG=node-v$(cat .nvmrc)-linux-x64 && \
+ curl -sL --retry 3 -O https://nodejs.org/dist/v$(cat .nvmrc)/$NODE_SLUG.tar.gz && \
+ tar xzf $NODE_SLUG.tar.gz --strip-components=1 -C /usr/local  && \
+ rm $NODE_SLUG.tar.gz
 
 RUN cat /proc/sys/kernel/core_pattern
 
