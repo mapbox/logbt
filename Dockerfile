@@ -1,10 +1,7 @@
 FROM ubuntu:18.04
 
-# docker build -t logbt-signals -f Dockerfile.signals .
-# docker run --detach --privileged -it --rm --name="logbt-signals" logbt-signals
-# docker logs logbt-signals --tail all
-# docker kill --signal="SIGUSR1" logbt-signals
-# docker rm logbt-signals
+# docker build -t logbt -f Dockerfile .
+# docker run --privileged logbt
 
 ENV WORKINGDIR /usr/local/src
 WORKDIR ${WORKINGDIR}
@@ -19,8 +16,6 @@ RUN NODE_SLUG=node-v$(cat .nvmrc)-linux-x64 && \
  tar xzf $NODE_SLUG.tar.gz --strip-components=1 -C /usr/local  && \
  rm $NODE_SLUG.tar.gz
 
-RUN cat /proc/sys/kernel/core_pattern
-
-ENTRYPOINT ["./bin/logbt", "--setup", "--" ]
-
-CMD ["node","test/wait.js","1000"]
+CMD ./bin/logbt --setup && \
+    ./bin/logbt --test && \
+    ./test/unit.sh
