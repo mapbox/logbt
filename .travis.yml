@@ -122,7 +122,7 @@ matrix:
       install: *run_install
       script: *run_script
     - os: osx
-      osx_image: xcode8.2
+      osx_image: xcode11
       before_install: *osx_setup
       install: *run_install
       script: *run_script
