@@ -28,9 +28,10 @@ before_install_osx: &osx_setup
 install_default: &run_install
   # disable node that may be already enabled via nvm
   - nvm unload || true
-  - NODE_SLUG=node-v$(cat .nvmrc)-linux-x64
-  - curl -sL --retry 3 -O https://nodejs.org/dist/v$(cat .nvmrc)/$NODE_SLUG.tar.gz
-  - sudo tar xzf $NODE_SLUG.tar.gz --strip-components=1 -C /usr/local
+  - platform=$(uname -s | tr '[:upper:]' '[:lower:]')
+  - NODE_SLUG=node-v$(cat .nvmrc)-${platform}-x64
+  - curl -sL --retry 3 -O https://nodejs.org/dist/v$(cat .nvmrc)/${NODE_SLUG}.tar.gz
+  - sudo tar xzf ${NODE_SLUG}.tar.gz --strip-components=1 -C /usr/local
   - export PATH=/usr/local/bin:${PATH}
   - /usr/local/bin/node --version
   - which node
