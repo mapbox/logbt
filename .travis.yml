@@ -1,8 +1,8 @@
 language: generic
 
 before_install_linux: &linux_setup
-  - mkdir mason && curl -sSfL https://github.com/mapbox/mason/archive/e8fa2d1
-.tar.gz | tar --gunzip --extract --strip-components=1 --directory=./mason
+  - mkdir mason
+  - curl -sSfL "https://github.com/mapbox/mason/archive/e8fa2d1.tar.gz" | tar --gunzip --extract --strip-components=1 --directory=./mason
   - ./mason/mason install gdb 7.12
   - sudo ln -s $(./mason/mason prefix gdb 7.12)/bin/gdb /usr/local/bin/gdb
   - which gdb
@@ -51,7 +51,6 @@ matrix:
     - os: linux
       env: DOCKER=PID1-signal
       dist: trusty
-      sudo: required
       script:
         - ./test/docker-snapshotting.sh TERM
         - ./test/docker-snapshotting.sh HUP
@@ -60,7 +59,6 @@ matrix:
     - os: linux
       env: DOCKER=writable-proc
       dist: trusty
-      sudo: required
       script:
         - docker build -t logbt-bionic1 -f Dockerfile.writable-proc .
         - docker run --cap-add SYS_PTRACE --volume /proc:/writable-proc logbt-bionic1
@@ -68,7 +66,6 @@ matrix:
     - os: linux
       env: DOCKER=readonly
       dist: trusty
-      sudo: required
       script:
         - docker build -t logbt-bionic2 -f Dockerfile.readonly .
         - sudo ./bin/logbt --setup
@@ -77,7 +74,6 @@ matrix:
     - os: linux
       env: DOCKER=privileged
       dist: trusty
-      sudo: required
       script:
         - docker build -t logbt-bionic3 -f Dockerfile .
         - docker run --privileged logbt-bionic3
@@ -85,14 +81,12 @@ matrix:
     - os: linux
       env: DOCKER=readonly-from-host
       dist: trusty
-      sudo: required
       script:
         - docker build -t logbt-bionic4 -f Dockerfile.logbt-from-host .
         - sudo ./bin/logbt --setup
         - docker run --cap-add SYS_PTRACE -v $(pwd)/bin/logbt:/usr/local/bin/logbt logbt-bionic4
     - os: linux
       dist: bionic
-      sudo: required
       env: CXX=clang++
       before_install: *linux_setup
       install: *run_install
@@ -103,7 +97,6 @@ matrix:
       script: *run_script
     - os: linux
       dist: trusty
-      sudo: required
       env: CXX=g++-6
       addons:
         apt:
@@ -114,7 +107,6 @@ matrix:
       script: *run_script
     - os: linux
       dist: bionic
-      sudo: required
       env: CXX=g++
       before_install: *linux_setup
       install: *run_install
