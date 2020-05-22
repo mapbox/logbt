@@ -64,43 +64,43 @@ matrix:
       dist: trusty
       sudo: required
       script:
-        - docker build -t logbt-precise1 -f Dockerfile.writable-proc .
-        - docker run --cap-add SYS_PTRACE --volume /proc:/writable-proc logbt-precise1
+        - docker build -t logbt-bionic1 -f Dockerfile.writable-proc .
+        - docker run --cap-add SYS_PTRACE --volume /proc:/writable-proc logbt-bionic1
         - cat /proc/sys/kernel/core_pattern
     - os: linux
       env: DOCKER=readonly
       dist: trusty
       sudo: required
       script:
-        - docker build -t logbt-precise2 -f Dockerfile.readonly .
+        - docker build -t logbt-bionic2 -f Dockerfile.readonly .
         - sudo ./bin/logbt --setup
-        - docker run --cap-add SYS_PTRACE logbt-precise2
+        - docker run --cap-add SYS_PTRACE logbt-bionic2
         - cat /proc/sys/kernel/core_pattern
     - os: linux
       env: DOCKER=privileged
       dist: trusty
       sudo: required
       script:
-        - docker build -t logbt-precise3 -f Dockerfile .
-        - docker run --privileged logbt-precise3
+        - docker build -t logbt-bionic3 -f Dockerfile .
+        - docker run --privileged logbt-bionic3
         - cat /proc/sys/kernel/core_pattern
     - os: linux
       env: DOCKER=readonly-from-host
       dist: trusty
       sudo: required
       script:
-        - docker build -t logbt-precise4 -f Dockerfile.logbt-from-host .
+        - docker build -t logbt-bionic4 -f Dockerfile.logbt-from-host .
         - sudo ./bin/logbt --setup
-        - docker run --cap-add SYS_PTRACE -v $(pwd)/bin/logbt:/usr/local/bin/logbt logbt-precise4
+        - docker run --cap-add SYS_PTRACE -v $(pwd)/bin/logbt:/usr/local/bin/logbt logbt-bionic4
     - os: linux
-      dist: precise
+      dist: bionic
       sudo: required
       env: CXX=clang++
       before_install: *linux_setup
       install: *run_install
       before_script:
-        - ./mason/mason install clang++ 3.8.1
-        - sudo ln -s $(./mason/mason prefix clang++ 3.8.1)/bin/clang++ /usr/local/bin/clang++
+        - ./mason/mason install clang++ 10.0.0
+        - sudo ln -s $(./mason/mason prefix clang++ 10.0.0)/bin/clang++ /usr/local/bin/clang++
         - which clang++
       script: *run_script
     - os: linux
@@ -115,7 +115,7 @@ matrix:
       install: *run_install
       script: *run_script
     - os: linux
-      dist: precise
+      dist: bionic
       sudo: required
       env: CXX=g++
       before_install: *linux_setup
