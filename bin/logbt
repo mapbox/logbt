@@ -107,6 +107,11 @@ ulimit -c unlimited
 # in order to get the PID
 $* & export CHILD_PID=$!
 
+# Setup the signal handlers
+trap "echo SIGTERM detected, killing ${CHILD_PID} && kill -TERM ${CHILD_PID} && wait ${CHILD_PID}" TERM
+
 # Keep logbt running as long as the child is running
 # to be able to hook into a potential crash
 wait ${CHILD_PID}
+
+echo "wait ${CHILD_PID} returned"
