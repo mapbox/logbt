@@ -1,7 +1,7 @@
 logbt
 -----
 
-[![Build Status](https://travis-ci.org/mapbox/logbt.svg?branch=master)](https://travis-ci.org/mapbox/logbt)
+[![Build Status](https://travis-ci.com/mapbox/logbt.svg?branch=master)](https://travis-ci.com/mapbox/logbt)
 
 Short for "Log Backtrace", this is a bash wrapper for displaying a backtrace when a program crashes.
 
@@ -17,7 +17,6 @@ The `logbt` command can also:
   - Respond to the `USR1` signal and generate a backtrace of a healthy program (which will continue to run)
   - Act as init process (aka "PID1") for docker containers (receives signals and reaps child processes)
   - Automatically clean up coredumps on the system (to avoid your disk filling up)
-  - Work on sudo-enabled travis-ci.org machines
 
 ### Supported signals
 
@@ -206,9 +205,7 @@ The `--privileged` only applies to `docker run` and not `docker build` (refs htt
 
 With AWS, the ECS [container definition](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#container_definition_security) is how you ask for `privileged` runs.
 
-The `logbt --setup` command does not work on some CI systems like https://circleci.com (neither on the host or in the container). This is because on circleci `/proc/sys/kernel/core_pattern` is read-only on the host (perhaps because the host machine is actually a docker container). It appears that to run in `--privileged` you need to be an [enterprise customer](https://github.com/circleci/image-builder/#ubuntu-1404-xxl-enterprise).
-
-Running `logbt` on travis works great with ["sudo-enabled" machines](https://docs.travis-ci.com/user/ci-environment/#Virtualization-environments). These machines allow you to run `sudo logbt --setup` on the host or run `logbt --setup` in a `privileged` container. However similar to circleci the `logbt --setup` command does not work on https://travis-ci.org "container-based" (aka `sudo:false`) machines.
+The `logbt --setup` command may not work on some CI systems unless you have permissions to modify the kernal pattern or if the kernal pattern is already set up to match logbt expectations.
 
 One other alternative to running `--privileged` is mounting a writable /proc directory like:
 
