@@ -112,8 +112,8 @@ function main() {
     # check stdout
     assertContains "$(stdout 1)" "${EXPECTED_STARTUP_MESSAGE}" "Expected startup message (depends on sudo vs sudoless)"
     assertEqual "$(stdout 2)" "stdout" "Emitted expected first line of stdout"
-    assertEqual "$(stdout 3)" "node exited with code:0" "Emitted expected second line of stdout"
-    assertEqual "$(stdout 4)" "" "No line 4 present"
+    assertEqual "$(stdout 4)" "node exited with code:0" "Emitted expected second line of stdout"
+    assertEqual "$(stdout 5)" "" "No line 4 present"
     # check stderr
     assertEqual "$(stderr 1)" "stderr" "Emitted expected first line of stderr"
     assertEqual "$(stderr 2)" "" "No line 3 present"
