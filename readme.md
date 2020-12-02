@@ -7,7 +7,7 @@ Simple wrapper for running a backtrace when a program segfaults. Requires `gdb` 
 ### Install
 
 ```sh
-curl -sL https://github.com/mapbox/logbt/archive/v1.2.0.tar.gz | tar --gunzip --extract --strip-components=1 --exclude=readme.md --directory=/usr/local
+curl -sL https://github.com/mapbox/logbt/archive/v1.2.1.tar.gz | tar --gunzip --extract --strip-components=1 --exclude=readme.md --directory=/usr/local
 ```
 
 ### Supports

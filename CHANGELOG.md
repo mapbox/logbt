@@ -1,4 +1,8 @@
 
+# v1.2.1
+
+- Add SIGTERM to 1.2.x series (https://github.com/mapbox/logbt/pull/49)
+
 # v1.2.0
 
  - Fixed display of backtraces by tracking pid of child program
