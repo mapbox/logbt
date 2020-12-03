@@ -17,12 +17,17 @@ matrix:
 
 install:
   # install node in a way that ensures node will be on PATH for sudo and sudoless usage
-  # install-node is a good solution given https://github.com/travis-ci/travis-ci/issues/1350
-  # which causes `source nvm.sh && sudo node ...` to fail
-  - curl https://s3.amazonaws.com/mapbox/apps/install-node/v2.0.0/run -o run
-  - chmod +x ./run
-  - sudo NV=4.4.2 NP=linux-x64 OD=/usr/local ./run
-  - bash --version
+  # disable node that may be already enabled via nvm
+  - nvm unload || true
+  - platform=$(uname -s | tr '[:upper:]' '[:lower:]')
+  - NODE_SLUG=node-v$(cat .nvmrc)-${platform}-x64
+  - curl -sL --retry 3 -O https://nodejs.org/dist/v$(cat .nvmrc)/${NODE_SLUG}.tar.gz
+  - sudo tar xzf ${NODE_SLUG}.tar.gz --strip-components=1 -C /usr/local
+  - export PATH=/usr/local/bin:${PATH}
+  - /usr/local/bin/node --version
+  - which node
+  - node --version
+  - npm --version
 
 script:
   # logbt should work as both root and as a non root user (as long as the corefile location is set beforehand as sudo)
